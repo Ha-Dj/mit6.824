@@ -18,16 +18,84 @@ package raft
 //
 
 import (
+	"fmt"
+	"log"
 	"math/rand"
+	"os"
+	"strconv"
 
 	//	"bytes"
 	"sync"
 	"sync/atomic"
 	"time"
-
 	//	"6.824/labgob"
 	"6.824/labrpc"
 )
+
+// ---------------------------for debug---------------------------
+
+// Retrieve the verbosity level from an environment variable
+func getVerbosity() int {
+	v := os.Getenv("VERBOSE")
+	level := 0
+	if v != "" {
+		var err error
+		level, err = strconv.Atoi(v)
+		if err != nil {
+			log.Fatalf("Invalid verbosity %v", v)
+		}
+	}
+	return level
+}
+
+type logTopic string
+
+const (
+	dClient  logTopic = "CLNT"
+	dCommit  logTopic = "CMIT"
+	dDrop    logTopic = "DROP"
+	dError   logTopic = "ERRO"
+	dInfo    logTopic = "INFO"
+	dLeader  logTopic = "LEAD"
+	dLog     logTopic = "LOG1"
+	dLog2    logTopic = "LOG2"
+	dPersist logTopic = "PERS"
+	dSnap    logTopic = "SNAP"
+	dTerm    logTopic = "TERM"
+	dTest    logTopic = "TEST"
+	dTimer   logTopic = "TIMR"
+	dTrace   logTopic = "TRCE"
+	dVote    logTopic = "VOTE"
+	dWarn    logTopic = "WARN"
+)
+
+var debugStart time.Time
+var debugVerbosity int
+
+func init() {
+	debugVerbosity = getVerbosity()
+	debugStart = time.Now()
+
+	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
+}
+
+func PrettyDebug(topic logTopic, format string, a ...interface{}) {
+	if debugVerbosity >= 1 {
+		time := time.Since(debugStart).Microseconds()
+		time /= 100
+		prefix := fmt.Sprintf("%06d %v ", time, string(topic))
+		format = prefix + format
+		log.Printf(format, a...)
+	}
+}
+
+var statusMap = map[int]string{
+	STATE_FOLLOWER:  "follower",
+	STATE_LEADER:    "leader",
+	STATE_CANDIDATE: "candidate",
+}
+
+// ---------------------------for debug---------------------------
 
 const (
 	Null              = -1
@@ -93,6 +161,7 @@ type Raft struct {
 
 	status        int         // status
 	electionTimer *time.Timer // 超时重置
+	nPeers        int         // peers 结点个数
 }
 
 // return currentTerm and whether this server
@@ -204,12 +273,15 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		return
 	}
 	if args.Term > rf.currentTerm {
+		PrettyDebug(dTerm, "S%d T%d converting to follower. Term too small (%d -> %d)", rf.me, rf.currentTerm,
+			rf.currentTerm, args.Term)
 		rf.currentTerm = args.Term
 		rf.voteFor = Null
 		rf.status = STATE_FOLLOWER
 	}
-
 	rf.electionTimer.Reset(randomElectionTimeout())
+	PrettyDebug(dTimer, "S%d T%d reset election timeout. (HeartBeat: %d -> %d)", rf.me, rf.currentTerm,
+		args.LeaderId, rf.me)
 	reply.Success = true
 	reply.Term = rf.currentTerm
 	/*
@@ -278,19 +350,22 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 		return
 	}
 	if args.Term > rf.currentTerm {
+		PrettyDebug(dVote, "S%d T%d vote for S%d, converting to follower.", rf.me, rf.currentTerm,
+			args.CandidateId)
 		rf.currentTerm = args.Term
 		rf.status = STATE_FOLLOWER
 		rf.voteFor = args.CandidateId
 	}
-	if rf.voteFor != Null && rf.voteFor != args.CandidateId {
+	if rf.voteFor == Null || rf.voteFor == args.CandidateId {
+		PrettyDebug(dTimer, "S%d T%d reset election timeout. (RequestVote: %d vote for %d)", rf.me, rf.currentTerm,
+			rf.me, args.CandidateId)
+		rf.electionTimer.Reset(randomElectionTimeout())
+		reply.VoteGranted = true
 		reply.Term = rf.currentTerm
-		reply.VoteGranted = false
 		return
 	}
 
-	rf.electionTimer.Reset(randomElectionTimeout())
-
-	reply.VoteGranted = true
+	reply.VoteGranted = false
 	reply.Term = rf.currentTerm
 }
 
@@ -382,7 +457,7 @@ func (rf *Raft) startElection() {
 	}
 	rf.mu.Unlock()
 
-	voteCh := make(chan bool, len(rf.peers)-1)
+	voteCh := make(chan bool, rf.nPeers-1)
 	for index, _ := range rf.peers {
 		if rf.me == index {
 			continue
@@ -395,6 +470,8 @@ func (rf *Raft) startElection() {
 			}
 			rf.mu.Lock()
 			if reply.Term > rf.currentTerm {
+				PrettyDebug(dTerm, "S%d T%d converting to follower. Term too small (%d -> %d)", rf.me,
+					rf.currentTerm, rf.currentTerm, reply.Term)
 				rf.currentTerm = reply.Term
 				rf.status = STATE_FOLLOWER
 				rf.voteFor = Null
@@ -422,9 +499,11 @@ func (rf *Raft) startElection() {
 			voteGrantedCnt++
 		}
 
-		if voteGrantedCnt > len(rf.peers)/2 {
+		if voteGrantedCnt > rf.nPeers/2 {
 			rf.mu.Lock()
 			rf.status = STATE_LEADER
+			PrettyDebug(dLeader, "S%d T%d achieved majority for term(%d), %d > %d , converting to Leader! ", rf.me,
+				rf.currentTerm, voteGrantedCnt, rf.nPeers/2, rf.currentTerm)
 			rf.mu.Unlock()
 			go rf.startHeartBeat()
 			break
@@ -447,6 +526,7 @@ func (rf *Raft) ticker() {
 				rf.mu.Unlock()
 				break
 			}
+			PrettyDebug(dTimer, "S%d T%d %s election timeout, converting to Candidate", rf.me, rf.currentTerm, statusMap[rf.status])
 			rf.status = STATE_CANDIDATE
 			rf.mu.Unlock()
 			go rf.startElection()
@@ -480,9 +560,13 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	}
 	rf.log = make([]LogEntry, 1024)
 	rf.log[0] = LogEntry{Term: 0, Index: 0}
+	rf.nPeers = len(peers)
 	rf.electionTimer = time.NewTimer(randomElectionTimeout())
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
+
+	PrettyDebug(dLog, "S%d, making...", rf.me)
+
 	// start ticker goroutine to start elections
 	go rf.ticker()
 

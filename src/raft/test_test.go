@@ -127,17 +127,41 @@ func TestManyElections2A(t *testing.T) {
 		i2 := rand.Int() % servers
 		i3 := rand.Int() % servers
 
+		mu := sync.Mutex{}
+
+		mu.Lock()
 		cfg.disconnect(i1)
+		PrettyDebug(dWarn, "S%d disconnect", i1)
+		mu.Unlock()
+
+		mu.Lock()
 		cfg.disconnect(i2)
+		PrettyDebug(dWarn, "S%d disconnect", i2)
+		mu.Unlock()
+
+		mu.Lock()
 		cfg.disconnect(i3)
+		PrettyDebug(dWarn, "S%d disconnect", i3)
+		mu.Unlock()
 
 		// either the current leader should still be alive,
 		// or the remaining four should elect a new one.
 		cfg.checkOneLeader()
 
+		mu.Lock()
 		cfg.connect(i1)
+		PrettyDebug(dWarn, "S%d connect", i1)
+		mu.Unlock()
+
+		mu.Lock()
 		cfg.connect(i2)
+		PrettyDebug(dWarn, "S%d connect", i2)
+		mu.Unlock()
+
+		mu.Lock()
 		cfg.connect(i3)
+		PrettyDebug(dWarn, "S%d connect", i3)
+		mu.Unlock()
 	}
 
 	cfg.checkOneLeader()

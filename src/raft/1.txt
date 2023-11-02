@@ -1,0 +1,66 @@
+000008 CLNT  starting...
+000014 CLNT  starting...
+000015 CLNT  starting...
+Test (2A): initial election ...
+003766 VOTE S1 Leader, checking heartbeats
+  ... Passed --   3.1  3   38   10110    0
+030582 CLNT  starting...
+030584 CLNT  starting...
+030585 CLNT  starting...
+Test (2A): election after network failure ...
+033096 VOTE S2 Leader, checking heartbeats
+033378 VOTE S0 Leader, checking heartbeats
+034097 VOTE S1 Leader, checking heartbeats
+039230 VOTE S0 Leader, checking heartbeats
+049695 VOTE S2 Leader, checking heartbeats
+049955 VOTE S1 Leader, checking heartbeats
+053857 VOTE S2 Leader, checking heartbeats
+054840 VOTE S1 Leader, checking heartbeats
+058681 VOTE S2 Leader, checking heartbeats
+059267 VOTE S1 Leader, checking heartbeats
+062255 VOTE S2 Leader, checking heartbeats
+063737 VOTE S1 Leader, checking heartbeats
+067128 VOTE S2 Leader, checking heartbeats
+  ... Passed --   4.5  3   90   18076    0
+075577 CLNT  starting...
+075579 CLNT  starting...
+075580 CLNT  starting...
+075582 CLNT  starting...
+075583 CLNT  starting...
+075584 CLNT  starting...
+075586 CLNT  starting...
+Test (2A): multiple elections ...
+078753 VOTE S1 Leader, checking heartbeats
+078843 VOTE S0 Leader, checking heartbeats
+079154 VOTE S4 Leader, checking heartbeats
+084775 VOTE S3 Leader, checking heartbeats
+084986 VOTE S2 Leader, checking heartbeats
+088296 VOTE S3 Leader, checking heartbeats
+088887 VOTE S2 Leader, checking heartbeats
+089172 VOTE S0 Leader, checking heartbeats
+090177 VOTE S1 Leader, checking heartbeats
+093527 VOTE S0 Leader, checking heartbeats
+094661 VOTE S5 Leader, checking heartbeats
+097789 VOTE S0 Leader, checking heartbeats
+098837 VOTE S5 Leader, checking heartbeats
+100070 VOTE S2 Leader, checking heartbeats
+102709 VOTE S5 Leader, checking heartbeats
+104948 VOTE S1 Leader, checking heartbeats
+108958 VOTE S1 Leader, checking heartbeats
+109327 VOTE S3 Leader, checking heartbeats
+110546 VOTE S6 Leader, checking heartbeats
+113489 VOTE S1 Leader, checking heartbeats
+114916 VOTE S4 Leader, checking heartbeats
+115707 VOTE S2 Leader, checking heartbeats
+118999 VOTE S4 Leader, checking heartbeats
+119368 VOTE S5 Leader, checking heartbeats
+120268 VOTE S2 Leader, checking heartbeats
+123071 VOTE S4 Leader, checking heartbeats
+123115 VOTE S5 Leader, checking heartbeats
+124484 VOTE S2 Leader, checking heartbeats
+124495 VOTE S1 Leader, checking heartbeats
+126583 VOTE S4 Leader, checking heartbeats
+128406 VOTE S2 Leader, checking heartbeats
+  ... Passed --   5.6  7  444   83180    0
+PASS
+ok  	6.824/raft	14.858s
