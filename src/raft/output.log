@@ -1,0 +1,26 @@
+000005 LOG1 S0, making...
+000007 LOG1 S1, making...
+000008 LOG1 S2, making...
+Test (2B): basic agreement ...
+004077 TIMR S0 T0 follower election timeout, converting to Candidate
+004085 VOTE S2 T0 vote for S0, converting to follower.
+004086 TIMR S2 T1 reset election timeout. (RequestVote: 2 vote for 0)
+004086 VOTE S1 T0 vote for S0, converting to follower.
+004087 TIMR S1 T1 reset election timeout. (RequestVote: 1 vote for 0)
+004087 LEAD S0 T1 achieved majority for term(2), 1 > 1 , converting to Leader! 
+004089 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+004089 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+004121 LEAD S0 leader Term 1 Broadcast appendEntries
+004121 LEAD S0 leader Term 1 start send rpc
+004122 LEAD S0 leader Term 1 start send rpc
+004124 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+004125 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+panic: runtime error: index out of range [2] with length 0
+
+goroutine 45 [running]:
+6.824/raft.(*Raft).LeaderAppendEntries.func1(0x2, 0x14000128c40, 0x1)
+	/Users/dengjie/mit6.824/6.824/src/raft/raft.go:671 +0x41c
+created by 6.824/raft.(*Raft).LeaderAppendEntries in goroutine 21
+	/Users/dengjie/mit6.824/6.824/src/raft/raft.go:648 +0x6c8
+exit status 2
+FAIL	6.824/raft	0.524s

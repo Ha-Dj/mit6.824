@@ -1,0 +1,93 @@
+000006 LOG1 S0, making...
+000011 LOG1 S1, making...
+000012 LOG1 S2, making...
+Test (2A): election after network failure ...
+004310 TIMR S0 T0 follower election timeout, converting to Candidate
+004323 VOTE S1 T0 vote for S0, converting to follower.
+004323 TIMR S1 T1 reset election timeout. (RequestVote: 1 vote for 0)
+004324 VOTE S2 T0 vote for S0, converting to follower.
+004324 TIMR S2 T1 reset election timeout. (RequestVote: 2 vote for 0)
+004324 LEAD S0 T1 achieved majority for term(2), 1 > 1 , converting to Leader! 
+004326 TIMR S2 T1 follower election timeout, converting to Candidate
+004328 VOTE S0 T1 vote for S2, converting to follower.
+==================
+WARNING: DATA RACE
+Write at 0x00c0000d20f8 by goroutine 36:
+  6.824/raft.(*Raft).RequestVote()
+      /Users/dengjie/mit6.824/6.824/src/raft/raft.go:413 +0x19c
+  runtime.call32()
+      /usr/local/go/src/runtime/asm_arm64.s:479 +0x74
+  reflect.Value.Call()
+      /usr/local/go/src/reflect/value.go:380 +0x90
+  6.824/labrpc.(*Service).dispatch()
+      /Users/dengjie/mit6.824/6.824/src/labrpc/labrpc.go:496 +0x334
+  6.824/labrpc.(*Server).dispatch()
+      /Users/dengjie/mit6.824/6.824/src/labrpc/labrpc.go:420 +0x1f0
+  6.824/labrpc.(*Network).processReq.func1()
+      /Users/dengjie/mit6.824/6.824/src/labrpc/labrpc.go:240 +0x84
+
+Previous read at 0x00c0000d20f8 by goroutine 31:
+  6.824/raft.(*Raft).startHeartBeat()
+      /Users/dengjie/mit6.824/6.824/src/raft/raft.go:367 +0x30
+  6.824/raft.(*Raft).startElection.func3()
+      /Users/dengjie/mit6.824/6.824/src/raft/raft.go:591 +0x34
+
+Goroutine 36 (running) created at:
+  6.824/labrpc.(*Network).processReq()
+      /Users/dengjie/mit6.824/6.824/src/labrpc/labrpc.go:239 +0x20c
+  6.824/labrpc.MakeNetwork.func1.1()
+      /Users/dengjie/mit6.824/6.824/src/labrpc/labrpc.go:157 +0x84
+
+Goroutine 31 (finished) created at:
+  6.824/raft.(*Raft).startElection()
+      /Users/dengjie/mit6.824/6.824/src/raft/raft.go:591 +0x550
+  6.824/raft.(*Raft).ticker.func1()
+      /Users/dengjie/mit6.824/6.824/src/raft/raft.go:615 +0x34
+==================
+004332 TIMR S0 T2 reset election timeout. (RequestVote: 0 vote for 2)
+004333 VOTE S1 T1 vote for S2, converting to follower.
+004334 TIMR S1 T2 reset election timeout. (RequestVote: 1 vote for 2)
+004335 LEAD S2 T2 achieved majority for term(2), 1 > 2 , converting to Leader! 
+004340 TIMR S1 T2 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+004341 TIMR S0 T2 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+007953 TIMR S0 T2 follower election timeout, converting to Candidate
+007956 VOTE S1 T2 vote for S0, converting to follower.
+007956 TIMR S1 T3 reset election timeout. (RequestVote: 1 vote for 0)
+007957 LEAD S0 T3 achieved majority for term(2), 1 > 3 , converting to Leader! 
+007960 TIMR S1 T3 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+009461 TERM S2 T2 converting to follower. Term too small (2 -> 3)
+009462 TIMR S2 T3 reset election timeout. (HeartBeat: 0 -> 2, commitIndex 0)
+009464 TIMR S1 T3 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+010966 TIMR S2 T3 reset election timeout. (HeartBeat: 0 -> 2, commitIndex 0)
+010969 TIMR S1 T3 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+012481 TIMR S2 T3 reset election timeout. (HeartBeat: 0 -> 2, commitIndex 0)
+012481 TIMR S1 T3 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+013985 TIMR S1 T3 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+013985 TIMR S2 T3 reset election timeout. (HeartBeat: 0 -> 2, commitIndex 0)
+017523 TIMR S1 T3 follower election timeout, converting to Candidate
+018890 TIMR S2 T3 follower election timeout, converting to Candidate
+021169 TIMR S1 T4 candidate election timeout, converting to Candidate
+023475 TIMR S2 T4 candidate election timeout, converting to Candidate
+025682 TIMR S1 T5 candidate election timeout, converting to Candidate
+027770 TIMR S2 T5 candidate election timeout, converting to Candidate
+029355 TIMR S1 T6 candidate election timeout, converting to Candidate
+031887 TIMR S2 T6 candidate election timeout, converting to Candidate
+034207 TIMR S1 T7 candidate election timeout, converting to Candidate
+036492 TIMR S2 T7 candidate election timeout, converting to Candidate
+039175 TIMR S1 T8 candidate election timeout, converting to Candidate
+039180 VOTE S2 T8 vote for S1, converting to follower.
+039181 TIMR S2 T9 reset election timeout. (RequestVote: 2 vote for 1)
+039183 LEAD S1 T9 achieved majority for term(2), 1 > 9 , converting to Leader! 
+039188 TIMR S2 T9 reset election timeout. (HeartBeat: 1 -> 2, commitIndex 0)
+040689 TERM S0 T3 converting to follower. Term too small (3 -> 9)
+040689 TIMR S2 T9 reset election timeout. (HeartBeat: 1 -> 2, commitIndex 0)
+040689 TIMR S0 T9 reset election timeout. (HeartBeat: 1 -> 0, commitIndex 0)
+042193 TIMR S0 T9 reset election timeout. (HeartBeat: 1 -> 0, commitIndex 0)
+042195 TIMR S2 T9 reset election timeout. (HeartBeat: 1 -> 2, commitIndex 0)
+043692 TIMR S0 T9 reset election timeout. (HeartBeat: 1 -> 0, commitIndex 0)
+043692 TIMR S2 T9 reset election timeout. (HeartBeat: 1 -> 2, commitIndex 0)
+--- FAIL: TestReElection2A (4.51s)
+    testing.go:1465: race detected during execution of test
+FAIL
+exit status 1
+FAIL	6.824/raft	20.516s

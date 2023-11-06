@@ -1,0 +1,69 @@
+000006 LOG1 S0, making...
+000011 LOG1 S1, making...
+000012 LOG1 S2, making...
+Test (2B): basic agreement ...
+003850 TIMR S2 T0 follower election timeout, converting to Candidate
+003864 VOTE S0 T0 vote for S2, converting to follower.
+003864 VOTE S1 T0 vote for S2, converting to follower.
+003864 TIMR S0 T1 reset election timeout. (RequestVote: 0 vote for 2)
+003865 TIMR S1 T1 reset election timeout. (RequestVote: 1 vote for 2)
+003868 LEAD S2 T1 achieved majority for term(2), 1 > 1 , converting to Leader! 
+003877 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+003877 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+004055 CLNT S2 leader Term 1 append new log nextIndex2 matchIndex1
+004100 LEAD S2 leader Term 1 Broadcast appendEntries
+004100 LEAD S2 prevIndex0
+004100 LEAD S2 prevIndex0
+004103 LOG2 S0 follower Term1 append new log, len(rf.log) 1, args.PrevLogIndex 0
+004104 WARN S0 follower Term1 append new log, len 2
+004103 LOG2 S1 follower Term1 append new log, len(rf.log) 1, args.PrevLogIndex 0
+004104 WARN S1 follower Term1 append new log, len 2
+004105 LEAD S2 leader Term 1 appendEntries success: commitIndex1
+004105 LEAD S2 leader Term 1 appendEntries success: commitIndex1
+004210 CMIT S2 leader Term1 commit{CommandIndex:1}
+004210 CMIT S2 leader Term1 commit
+004873 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+004873 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+005885 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+005884 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+006883 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+006884 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+007890 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+007890 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+008894 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+008894 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+009901 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+009901 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+010909 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+010909 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+011912 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+011912 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+012912 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+012913 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+013919 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+013919 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+014921 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+014922 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+015926 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+015927 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+016929 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+016929 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+017939 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+017939 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+018949 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+018949 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+019954 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+019954 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+020972 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+020974 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+021994 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+022001 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+023058 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+023061 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+024063 TIMR S1 T1 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+024064 TIMR S0 T1 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+--- FAIL: TestBasicAgree2B (2.41s)
+    config.go:596: one(100) failed to reach agreement
+FAIL
+exit status 1
+FAIL	6.824/raft	5.391s

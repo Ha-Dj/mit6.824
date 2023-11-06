@@ -1,0 +1,88 @@
+000046 LOG1 S0, making...
+000053 LOG1 S1, making...
+000054 LOG1 S2, making...
+Test (2B): basic agreement ...
+004112 TIMR S0 T0 follower election timeout, converting to Candidate
+004385 VOTE S1 T0 vote for S0, converting to follower.
+004386 TIMR S1 T1 reset election timeout. (RequestVote: 1 vote for 0)
+004390 LEAD S0 T1 achieved majority for term(2), 1 > 1 , converting to Leader! 
+004391 VOTE S2 T0 vote for S0, converting to follower.
+004391 TIMR S2 T1 reset election timeout. (RequestVote: 2 vote for 0)
+004400 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2, commitIndex 0)
+004400 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+004602 CLNT S0 leader Term 1 append new log nextIndex2 matchIndex1
+004684 LEAD S0 leader Term 1 Broadcast appendEntries
+004687 LEAD S0 prevIndex0
+004688 LEAD S0 prevIndex0
+004707 LOG2 S1 follower Term1 append new log, len(rf.log) 1, args.PrevLogIndex 0
+004708 WARN S1 follower Term1 append new log, len 2
+004710 LEAD S0 leader Term 1 appendEntries success: commitIndex1
+004737 LOG2 S2 follower Term1 append new log, len(rf.log) 1, args.PrevLogIndex 0
+004738 WARN S2 follower Term1 append new log, len 2
+004740 LEAD S0 leader Term 1 appendEntries success: commitIndex1
+004806 CMIT S0 leader Term1 commit{CommandIndex:1}
+004807 CMIT S0 leader Term1 commit
+006065 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2, commitIndex 0)
+006065 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+006176 CMIT S1 follower Term1 commit{CommandIndex:1}
+006176 CMIT S1 follower Term1 commit
+006177 CMIT S2 follower Term1 commit{CommandIndex:1}
+006177 CMIT S2 follower Term1 commit
+006267 CLNT S0 leader Term 1 append new log nextIndex3 matchIndex2
+006278 LEAD S0 leader Term 1 Broadcast appendEntries
+006278 LEAD S0 prevIndex1
+006278 LEAD S0 prevIndex1
+006288 LOG2 S1 follower Term1 append new log, len(rf.log) 2, args.PrevLogIndex 1
+006288 WARN S1 follower Term1 append new log, len 3
+006291 LOG2 S2 follower Term1 append new log, len(rf.log) 2, args.PrevLogIndex 1
+006291 WARN S2 follower Term1 append new log, len 3
+006291 LEAD S0 leader Term 1 appendEntries success: commitIndex2
+006295 LEAD S0 leader Term 1 appendEntries success: commitIndex2
+006388 CMIT S0 leader Term1 commit{CommandIndex:2}
+006389 CMIT S0 leader Term1 commit
+007606 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2, commitIndex 1)
+007629 CMIT S2 follower Term1 commit{CommandIndex:2}
+007630 CMIT S2 follower Term1 commit
+007651 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 1)
+008103 CMIT S1 follower Term1 commit{CommandIndex:2}
+008103 CMIT S1 follower Term1 commit
+008327 CLNT S0 leader Term 1 append new log nextIndex4 matchIndex3
+008328 LEAD S0 leader Term 1 Broadcast appendEntries
+008329 LEAD S0 prevIndex2
+008329 LEAD S0 prevIndex2
+008337 LOG2 S2 follower Term1 append new log, len(rf.log) 3, args.PrevLogIndex 2
+008337 WARN S2 follower Term1 append new log, len 4
+008339 LEAD S0 leader Term 1 appendEntries success: commitIndex3
+008610 CMIT S0 leader Term1 commit{CommandIndex:3}
+008614 CMIT S0 leader Term1 commit
+008623 LOG2 S1 follower Term1 append new log, len(rf.log) 3, args.PrevLogIndex 2
+008623 WARN S1 follower Term1 append new log, len 4
+012548 TIMR S2 T1 follower election timeout, converting to Candidate
+012550 VOTE S1 T1 vote for S2, converting to follower.
+012625 TIMR S1 T2 follower election timeout, converting to Candidate
+012745 VOTE S2 T2 vote for S1, converting to follower.
+012955 LEAD S0 leader Term 1 appendEntries success: commitIndex3
+012958 VOTE S0 T1 vote for S2, converting to follower.
+017291 TIMR S2 T3 follower election timeout, converting to Candidate
+017299 VOTE S0 T3 vote for S2, converting to follower.
+017302 VOTE S1 T3 vote for S2, converting to follower.
+017406 TIMR S1 T4 follower election timeout, converting to Candidate
+017411 VOTE S2 T4 vote for S1, converting to follower.
+017422 VOTE S0 T4 vote for S1, converting to follower.
+021189 TIMR S1 T5 candidate election timeout, converting to Candidate
+021192 VOTE S2 T5 vote for S1, converting to follower.
+021193 VOTE S0 T5 vote for S1, converting to follower.
+021897 TIMR S2 T6 follower election timeout, converting to Candidate
+021903 VOTE S0 T6 vote for S2, converting to follower.
+021907 VOTE S1 T6 vote for S2, converting to follower.
+026062 TIMR S1 T7 follower election timeout, converting to Candidate
+026068 VOTE S2 T7 vote for S1, converting to follower.
+026071 VOTE S0 T7 vote for S1, converting to follower.
+026730 TIMR S2 T8 follower election timeout, converting to Candidate
+026742 VOTE S0 T8 vote for S2, converting to follower.
+026745 VOTE S1 T8 vote for S2, converting to follower.
+--- FAIL: TestBasicAgree2B (2.85s)
+    config.go:596: one(300) failed to reach agreement
+FAIL
+exit status 1
+FAIL	6.824/raft	5.211s

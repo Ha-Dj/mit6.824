@@ -1,0 +1,350 @@
+000026 LOG1 S0, making...
+000033 LOG1 S1, making...
+000034 LOG1 S2, making...
+000035 LOG1 S3, making...
+000035 LOG1 S4, making...
+000036 LOG1 S5, making...
+000037 LOG1 S6, making...
+Test (2A): multiple elections ...
+004170 TIMR S6 T0 follower election timeout, converting to Candidate
+004179 VOTE S3 T0 vote for S6, converting to follower.
+004179 TIMR S3 T1 reset election timeout. (RequestVote: 3 vote for 6)
+004180 VOTE S0 T0 vote for S6, converting to follower.
+004180 TIMR S0 T1 reset election timeout. (RequestVote: 0 vote for 6)
+004181 VOTE S4 T0 vote for S6, converting to follower.
+004181 VOTE S5 T0 vote for S6, converting to follower.
+004182 TIMR S5 T1 reset election timeout. (RequestVote: 5 vote for 6)
+004182 TIMR S4 T1 reset election timeout. (RequestVote: 4 vote for 6)
+004183 VOTE S2 T0 vote for S6, converting to follower.
+004183 TIMR S2 T1 reset election timeout. (RequestVote: 2 vote for 6)
+004184 LEAD S6 T1 achieved majority for term(4), 3 > 1 , converting to Leader! 
+004185 VOTE S1 T0 vote for S6, converting to follower.
+004185 TIMR S1 T1 reset election timeout. (RequestVote: 1 vote for 6)
+004188 TIMR S2 T1 reset election timeout. (HeartBeat: 6 -> 2, commitIndex 0)
+004190 TIMR S4 T1 reset election timeout. (HeartBeat: 6 -> 4, commitIndex 0)
+004191 TIMR S3 T1 reset election timeout. (HeartBeat: 6 -> 3, commitIndex 0)
+004191 TIMR S0 T1 reset election timeout. (HeartBeat: 6 -> 0, commitIndex 0)
+004192 TIMR S1 T1 reset election timeout. (HeartBeat: 6 -> 1, commitIndex 0)
+004191 TIMR S5 T1 reset election timeout. (HeartBeat: 6 -> 5, commitIndex 0)
+005188 TIMR S5 T1 reset election timeout. (HeartBeat: 6 -> 5, commitIndex 0)
+005190 TIMR S4 T1 reset election timeout. (HeartBeat: 6 -> 4, commitIndex 0)
+005191 TIMR S3 T1 reset election timeout. (HeartBeat: 6 -> 3, commitIndex 0)
+005191 TIMR S0 T1 reset election timeout. (HeartBeat: 6 -> 0, commitIndex 0)
+005192 TIMR S2 T1 reset election timeout. (HeartBeat: 6 -> 2, commitIndex 0)
+005194 TIMR S1 T1 reset election timeout. (HeartBeat: 6 -> 1, commitIndex 0)
+005440 WARN S5 disconnect
+005440 WARN S5 disconnect
+005441 WARN S2 disconnect
+006200 TIMR S0 T1 reset election timeout. (HeartBeat: 6 -> 0, commitIndex 0)
+006201 TIMR S1 T1 reset election timeout. (HeartBeat: 6 -> 1, commitIndex 0)
+006203 TIMR S4 T1 reset election timeout. (HeartBeat: 6 -> 4, commitIndex 0)
+006204 TIMR S3 T1 reset election timeout. (HeartBeat: 6 -> 3, commitIndex 0)
+007202 TIMR S3 T1 reset election timeout. (HeartBeat: 6 -> 3, commitIndex 0)
+007203 TIMR S4 T1 reset election timeout. (HeartBeat: 6 -> 4, commitIndex 0)
+007205 TIMR S0 T1 reset election timeout. (HeartBeat: 6 -> 0, commitIndex 0)
+007207 TIMR S1 T1 reset election timeout. (HeartBeat: 6 -> 1, commitIndex 0)
+008206 TIMR S3 T1 reset election timeout. (HeartBeat: 6 -> 3, commitIndex 0)
+008207 TIMR S1 T1 reset election timeout. (HeartBeat: 6 -> 1, commitIndex 0)
+008207 TIMR S0 T1 reset election timeout. (HeartBeat: 6 -> 0, commitIndex 0)
+008208 TIMR S4 T1 reset election timeout. (HeartBeat: 6 -> 4, commitIndex 0)
+009204 TIMR S0 T1 reset election timeout. (HeartBeat: 6 -> 0, commitIndex 0)
+009205 TIMR S3 T1 reset election timeout. (HeartBeat: 6 -> 3, commitIndex 0)
+009207 TIMR S4 T1 reset election timeout. (HeartBeat: 6 -> 4, commitIndex 0)
+009210 TIMR S5 T1 follower election timeout, converting to Candidate
+009215 TIMR S1 T1 reset election timeout. (HeartBeat: 6 -> 1, commitIndex 0)
+009882 TIMR S2 T1 follower election timeout, converting to Candidate
+010215 TIMR S1 T1 reset election timeout. (HeartBeat: 6 -> 1, commitIndex 0)
+010215 TIMR S4 T1 reset election timeout. (HeartBeat: 6 -> 4, commitIndex 0)
+010215 TIMR S0 T1 reset election timeout. (HeartBeat: 6 -> 0, commitIndex 0)
+010216 TIMR S3 T1 reset election timeout. (HeartBeat: 6 -> 3, commitIndex 0)
+010731 WARN S5 connect
+010732 WARN S5 connect
+010732 WARN S2 connect
+010732 WARN S1 disconnect
+010732 WARN S0 disconnect
+010733 WARN S2 disconnect
+011217 TIMR S4 T1 reset election timeout. (HeartBeat: 6 -> 4, commitIndex 0)
+011217 TIMR S3 T1 reset election timeout. (HeartBeat: 6 -> 3, commitIndex 0)
+013614 TIMR S5 T2 candidate election timeout, converting to Candidate
+013621 VOTE S3 T1 vote for S5, converting to follower.
+013622 TIMR S3 T3 reset election timeout. (RequestVote: 3 vote for 5)
+013623 VOTE S6 T2 vote for S5, converting to follower.
+013623 TIMR S6 T3 reset election timeout. (RequestVote: 6 vote for 5)
+013625 VOTE S4 T1 vote for S5, converting to follower.
+013625 TIMR S4 T3 reset election timeout. (RequestVote: 4 vote for 5)
+013627 LEAD S5 T3 achieved majority for term(4), 3 > 3 , converting to Leader! 
+013632 TIMR S6 T3 reset election timeout. (HeartBeat: 5 -> 6, commitIndex 0)
+013634 TIMR S3 T3 reset election timeout. (HeartBeat: 5 -> 3, commitIndex 0)
+013635 TIMR S4 T3 reset election timeout. (HeartBeat: 5 -> 4, commitIndex 0)
+013770 TIMR S2 T2 candidate election timeout, converting to Candidate
+014305 TIMR S0 T1 follower election timeout, converting to Candidate
+014338 TIMR S1 T1 follower election timeout, converting to Candidate
+014633 TIMR S3 T3 reset election timeout. (HeartBeat: 5 -> 3, commitIndex 0)
+014635 TIMR S4 T3 reset election timeout. (HeartBeat: 5 -> 4, commitIndex 0)
+014636 TIMR S6 T3 reset election timeout. (HeartBeat: 5 -> 6, commitIndex 0)
+015645 TIMR S3 T3 reset election timeout. (HeartBeat: 5 -> 3, commitIndex 0)
+015646 TIMR S4 T3 reset election timeout. (HeartBeat: 5 -> 4, commitIndex 0)
+015646 TIMR S6 T3 reset election timeout. (HeartBeat: 5 -> 6, commitIndex 0)
+015770 WARN S1 connect
+015771 WARN S0 connect
+015771 WARN S2 connect
+015772 WARN S1 disconnect
+015772 WARN S6 disconnect
+015773 WARN S0 disconnect
+016647 TIMR S4 T3 reset election timeout. (HeartBeat: 5 -> 4, commitIndex 0)
+016647 TIMR S2 T3 reset election timeout. (HeartBeat: 5 -> 2, commitIndex 0)
+016650 TIMR S3 T3 reset election timeout. (HeartBeat: 5 -> 3, commitIndex 0)
+017664 TIMR S2 T3 reset election timeout. (HeartBeat: 5 -> 2, commitIndex 0)
+017664 TIMR S3 T3 reset election timeout. (HeartBeat: 5 -> 3, commitIndex 0)
+017666 TIMR S4 T3 reset election timeout. (HeartBeat: 5 -> 4, commitIndex 0)
+018598 TIMR S1 T2 candidate election timeout, converting to Candidate
+018679 TIMR S2 T3 reset election timeout. (HeartBeat: 5 -> 2, commitIndex 0)
+018684 TIMR S4 T3 reset election timeout. (HeartBeat: 5 -> 4, commitIndex 0)
+018684 TIMR S3 T3 reset election timeout. (HeartBeat: 5 -> 3, commitIndex 0)
+019058 TIMR S0 T2 candidate election timeout, converting to Candidate
+019676 TIMR S4 T3 reset election timeout. (HeartBeat: 5 -> 4, commitIndex 0)
+019683 TIMR S2 T3 reset election timeout. (HeartBeat: 5 -> 2, commitIndex 0)
+019682 TIMR S3 T3 reset election timeout. (HeartBeat: 5 -> 3, commitIndex 0)
+019941 TIMR S6 T3 follower election timeout, converting to Candidate
+020634 WARN S1 connect
+020635 WARN S6 connect
+020635 WARN S0 connect
+020635 WARN S5 disconnect
+020635 WARN S3 disconnect
+020636 WARN S3 disconnect
+022817 TIMR S0 T3 candidate election timeout, converting to Candidate
+022827 VOTE S2 T3 vote for S0, converting to follower.
+022827 TIMR S2 T4 reset election timeout. (RequestVote: 2 vote for 0)
+022831 VOTE S1 T3 vote for S0, converting to follower.
+022832 TIMR S1 T4 reset election timeout. (RequestVote: 1 vote for 0)
+022833 VOTE S4 T3 vote for S0, converting to follower.
+022833 TIMR S4 T4 reset election timeout. (RequestVote: 4 vote for 0)
+022837 LEAD S0 T4 achieved majority for term(4), 3 > 4 , converting to Leader! 
+022841 TIMR S6 T4 reset election timeout. (HeartBeat: 0 -> 6, commitIndex 0)
+022843 TIMR S1 T4 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+022844 TIMR S4 T4 reset election timeout. (HeartBeat: 0 -> 4, commitIndex 0)
+022845 TIMR S2 T4 reset election timeout. (HeartBeat: 0 -> 2, commitIndex 0)
+023381 TIMR S3 T3 follower election timeout, converting to Candidate
+023843 TIMR S1 T4 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+023844 TIMR S2 T4 reset election timeout. (HeartBeat: 0 -> 2, commitIndex 0)
+023846 TIMR S4 T4 reset election timeout. (HeartBeat: 0 -> 4, commitIndex 0)
+023846 TIMR S6 T4 reset election timeout. (HeartBeat: 0 -> 6, commitIndex 0)
+024849 TIMR S6 T4 reset election timeout. (HeartBeat: 0 -> 6, commitIndex 0)
+024849 TIMR S4 T4 reset election timeout. (HeartBeat: 0 -> 4, commitIndex 0)
+024850 TIMR S1 T4 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+024851 TIMR S2 T4 reset election timeout. (HeartBeat: 0 -> 2, commitIndex 0)
+025583 WARN S5 connect
+025583 WARN S3 connect
+025583 WARN S3 connect
+025584 WARN S4 disconnect
+025584 WARN S5 disconnect
+025584 WARN S2 disconnect
+025861 TIMR S3 T4 reset election timeout. (HeartBeat: 0 -> 3, commitIndex 0)
+025862 TIMR S1 T4 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+025865 TIMR S6 T4 reset election timeout. (HeartBeat: 0 -> 6, commitIndex 0)
+026869 TIMR S1 T4 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+026869 TIMR S6 T4 reset election timeout. (HeartBeat: 0 -> 6, commitIndex 0)
+026934 TIMR S3 T4 reset election timeout. (HeartBeat: 0 -> 3, commitIndex 0)
+027870 TIMR S1 T4 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+027872 TIMR S3 T4 reset election timeout. (HeartBeat: 0 -> 3, commitIndex 0)
+027875 TIMR S6 T4 reset election timeout. (HeartBeat: 0 -> 6, commitIndex 0)
+028876 TIMR S3 T4 reset election timeout. (HeartBeat: 0 -> 3, commitIndex 0)
+028877 TIMR S6 T4 reset election timeout. (HeartBeat: 0 -> 6, commitIndex 0)
+028877 TIMR S1 T4 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+028959 TIMR S2 T4 follower election timeout, converting to Candidate
+029814 TIMR S4 T4 follower election timeout, converting to Candidate
+029881 TIMR S6 T4 reset election timeout. (HeartBeat: 0 -> 6, commitIndex 0)
+029882 TIMR S3 T4 reset election timeout. (HeartBeat: 0 -> 3, commitIndex 0)
+029883 TIMR S1 T4 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+030904 TIMR S6 T4 reset election timeout. (HeartBeat: 0 -> 6, commitIndex 0)
+030904 TIMR S1 T4 reset election timeout. (HeartBeat: 0 -> 1, commitIndex 0)
+030906 TIMR S3 T4 reset election timeout. (HeartBeat: 0 -> 3, commitIndex 0)
+030970 WARN S4 connect
+030970 WARN S5 connect
+030970 WARN S2 connect
+030971 WARN S0 disconnect
+030971 WARN S1 disconnect
+030972 WARN S2 disconnect
+033550 TIMR S4 T5 candidate election timeout, converting to Candidate
+033553 VOTE S3 T4 vote for S4, converting to follower.
+033553 VOTE S5 T5 vote for S4, converting to follower.
+033553 TIMR S3 T6 reset election timeout. (RequestVote: 3 vote for 4)
+033553 TIMR S5 T6 reset election timeout. (RequestVote: 5 vote for 4)
+033554 VOTE S6 T4 vote for S4, converting to follower.
+033554 TIMR S6 T6 reset election timeout. (RequestVote: 6 vote for 4)
+033555 LEAD S4 T6 achieved majority for term(4), 3 > 6 , converting to Leader! 
+033558 TIMR S6 T6 reset election timeout. (HeartBeat: 4 -> 6, commitIndex 0)
+033559 TIMR S5 T6 reset election timeout. (HeartBeat: 4 -> 5, commitIndex 0)
+033560 TIMR S3 T6 reset election timeout. (HeartBeat: 4 -> 3, commitIndex 0)
+033572 TIMR S2 T5 candidate election timeout, converting to Candidate
+034467 TIMR S1 T4 follower election timeout, converting to Candidate
+034560 TIMR S6 T6 reset election timeout. (HeartBeat: 4 -> 6, commitIndex 0)
+034561 TIMR S3 T6 reset election timeout. (HeartBeat: 4 -> 3, commitIndex 0)
+034562 TIMR S5 T6 reset election timeout. (HeartBeat: 4 -> 5, commitIndex 0)
+035568 TIMR S6 T6 reset election timeout. (HeartBeat: 4 -> 6, commitIndex 0)
+035569 TIMR S5 T6 reset election timeout. (HeartBeat: 4 -> 5, commitIndex 0)
+035569 TIMR S3 T6 reset election timeout. (HeartBeat: 4 -> 3, commitIndex 0)
+036420 WARN S0 connect
+036421 WARN S1 connect
+036421 WARN S2 connect
+036421 WARN S2 disconnect
+036421 WARN S6 disconnect
+036421 WARN S1 disconnect
+036577 TIMR S3 T6 reset election timeout. (HeartBeat: 4 -> 3, commitIndex 0)
+036579 TERM S0 T4 converting to follower. Term too small (4 -> 6)
+036579 TIMR S0 T6 reset election timeout. (HeartBeat: 4 -> 0, commitIndex 0)
+036577 TIMR S5 T6 reset election timeout. (HeartBeat: 4 -> 5, commitIndex 0)
+037582 TIMR S5 T6 reset election timeout. (HeartBeat: 4 -> 5, commitIndex 0)
+037584 TIMR S0 T6 reset election timeout. (HeartBeat: 4 -> 0, commitIndex 0)
+037588 TIMR S3 T6 reset election timeout. (HeartBeat: 4 -> 3, commitIndex 0)
+038088 TIMR S2 T6 candidate election timeout, converting to Candidate
+038587 TIMR S5 T6 reset election timeout. (HeartBeat: 4 -> 5, commitIndex 0)
+038588 TIMR S3 T6 reset election timeout. (HeartBeat: 4 -> 3, commitIndex 0)
+038587 TIMR S0 T6 reset election timeout. (HeartBeat: 4 -> 0, commitIndex 0)
+039270 TIMR S1 T5 candidate election timeout, converting to Candidate
+039594 TIMR S3 T6 reset election timeout. (HeartBeat: 4 -> 3, commitIndex 0)
+039596 TIMR S0 T6 reset election timeout. (HeartBeat: 4 -> 0, commitIndex 0)
+039598 TIMR S5 T6 reset election timeout. (HeartBeat: 4 -> 5, commitIndex 0)
+040191 TIMR S6 T6 follower election timeout, converting to Candidate
+040598 TIMR S5 T6 reset election timeout. (HeartBeat: 4 -> 5, commitIndex 0)
+040598 TIMR S3 T6 reset election timeout. (HeartBeat: 4 -> 3, commitIndex 0)
+040600 TIMR S0 T6 reset election timeout. (HeartBeat: 4 -> 0, commitIndex 0)
+041611 TIMR S0 T6 reset election timeout. (HeartBeat: 4 -> 0, commitIndex 0)
+041612 TIMR S5 T6 reset election timeout. (HeartBeat: 4 -> 5, commitIndex 0)
+041612 TIMR S3 T6 reset election timeout. (HeartBeat: 4 -> 3, commitIndex 0)
+041612 WARN S2 connect
+041613 WARN S6 connect
+041614 WARN S1 connect
+041614 WARN S3 disconnect
+041614 WARN S0 disconnect
+041614 WARN S3 disconnect
+042337 TIMR S2 T7 candidate election timeout, converting to Candidate
+042350 VOTE S6 T7 vote for S2, converting to follower.
+042350 TIMR S6 T8 reset election timeout. (RequestVote: 6 vote for 2)
+042350 VOTE S5 T6 vote for S2, converting to follower.
+042351 TIMR S5 T8 reset election timeout. (RequestVote: 5 vote for 2)
+042352 VOTE S1 T6 vote for S2, converting to follower.
+042352 TIMR S1 T8 reset election timeout. (RequestVote: 1 vote for 2)
+042353 VOTE S4 T6 vote for S2, converting to follower.
+042353 TIMR S4 T8 reset election timeout. (RequestVote: 4 vote for 2)
+042354 LEAD S2 T8 achieved majority for term(4), 3 > 8 , converting to Leader! 
+042357 TIMR S5 T8 reset election timeout. (HeartBeat: 2 -> 5, commitIndex 0)
+042359 TIMR S4 T8 reset election timeout. (HeartBeat: 2 -> 4, commitIndex 0)
+042359 TIMR S6 T8 reset election timeout. (HeartBeat: 2 -> 6, commitIndex 0)
+042362 TIMR S1 T8 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+043367 TIMR S6 T8 reset election timeout. (HeartBeat: 2 -> 6, commitIndex 0)
+043370 TIMR S1 T8 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+043372 TIMR S5 T8 reset election timeout. (HeartBeat: 2 -> 5, commitIndex 0)
+043373 TIMR S4 T8 reset election timeout. (HeartBeat: 2 -> 4, commitIndex 0)
+044365 TIMR S1 T8 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+044367 TIMR S6 T8 reset election timeout. (HeartBeat: 2 -> 6, commitIndex 0)
+044370 TIMR S4 T8 reset election timeout. (HeartBeat: 2 -> 4, commitIndex 0)
+044370 TIMR S5 T8 reset election timeout. (HeartBeat: 2 -> 5, commitIndex 0)
+045366 TIMR S1 T8 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+045369 TIMR S6 T8 reset election timeout. (HeartBeat: 2 -> 6, commitIndex 0)
+045369 TIMR S4 T8 reset election timeout. (HeartBeat: 2 -> 4, commitIndex 0)
+045371 TIMR S5 T8 reset election timeout. (HeartBeat: 2 -> 5, commitIndex 0)
+045636 TIMR S0 T6 follower election timeout, converting to Candidate
+045910 TIMR S3 T6 follower election timeout, converting to Candidate
+046115 WARN S3 connect
+046116 WARN S0 connect
+046117 WARN S3 connect
+046117 WARN S5 disconnect
+046117 WARN S2 disconnect
+046118 WARN S2 disconnect
+049777 TIMR S5 T8 follower election timeout, converting to Candidate
+049777 TIMR S1 T8 follower election timeout, converting to Candidate
+049780 VOTE S6 T8 vote for S1, converting to follower.
+049780 VOTE S4 T8 vote for S1, converting to follower.
+049780 VOTE S3 T7 vote for S1, converting to follower.
+049780 TIMR S6 T9 reset election timeout. (RequestVote: 6 vote for 1)
+049780 VOTE S0 T7 vote for S1, converting to follower.
+049781 TIMR S4 T9 reset election timeout. (RequestVote: 4 vote for 1)
+049781 TIMR S6 T9 follower election timeout, converting to Candidate
+049781 TIMR S3 T9 reset election timeout. (RequestVote: 3 vote for 1)
+049782 LEAD S1 T9 achieved majority for term(4), 3 > 9 , converting to Leader! 
+049781 TIMR S0 T9 reset election timeout. (RequestVote: 0 vote for 1)
+049783 VOTE S1 T9 vote for S6, converting to follower.
+049783 VOTE S3 T9 vote for S6, converting to follower.
+049783 TIMR S3 T10 reset election timeout. (RequestVote: 3 vote for 6)
+049784 VOTE S0 T9 vote for S6, converting to follower.
+049784 TIMR S0 T10 reset election timeout. (RequestVote: 0 vote for 6)
+049785 VOTE S4 T9 vote for S6, converting to follower.
+049785 TIMR S4 T10 reset election timeout. (RequestVote: 4 vote for 6)
+==================
+WARNING: DATA RACE
+Read at 0x00c0001521b8 by goroutine 1344:
+  6.824/raft.(*Raft).startHeartBeat()
+      /Users/dengjie/mit6.824/6.824/src/raft/raft.go:367 +0x30
+  6.824/raft.(*Raft).startElection.func3()
+      /Users/dengjie/mit6.824/6.824/src/raft/raft.go:591 +0x34
+
+Previous write at 0x00c0001521b8 by goroutine 1340:
+  6.824/raft.(*Raft).RequestVote()
+      /Users/dengjie/mit6.824/6.824/src/raft/raft.go:413 +0x19c
+  runtime.call32()
+      /usr/local/go/src/runtime/asm_arm64.s:479 +0x74
+  reflect.Value.Call()
+      /usr/local/go/src/reflect/value.go:380 +0x90
+  6.824/labrpc.(*Service).dispatch()
+      /Users/dengjie/mit6.824/6.824/src/labrpc/labrpc.go:496 +0x334
+  6.824/labrpc.(*Server).dispatch()
+      /Users/dengjie/mit6.824/6.824/src/labrpc/labrpc.go:420 +0x1f0
+  6.824/labrpc.(*Network).processReq.func1()
+      /Users/dengjie/mit6.824/6.824/src/labrpc/labrpc.go:240 +0x84
+
+Goroutine 1344 (running) created at:
+  6.824/raft.(*Raft).startElection()
+      /Users/dengjie/mit6.824/6.824/src/raft/raft.go:591 +0x550
+  6.824/raft.(*Raft).ticker.func1()
+      /Users/dengjie/mit6.824/6.824/src/raft/raft.go:615 +0x34
+
+Goroutine 1340 (running) created at:
+  6.824/labrpc.(*Network).processReq()
+      /Users/dengjie/mit6.824/6.824/src/labrpc/labrpc.go:239 +0x20c
+  6.824/labrpc.MakeNetwork.func1.1()
+      /Users/dengjie/mit6.824/6.824/src/labrpc/labrpc.go:157 +0x84
+==================
+049783 TIMR S1 T10 reset election timeout. (RequestVote: 1 vote for 6)
+049789 LEAD S6 T10 achieved majority for term(4), 3 > 10 , converting to Leader! 
+049791 TIMR S4 T10 reset election timeout. (HeartBeat: 6 -> 4, commitIndex 0)
+049791 TIMR S1 T10 reset election timeout. (HeartBeat: 6 -> 1, commitIndex 0)
+049791 TIMR S3 T10 reset election timeout. (HeartBeat: 6 -> 3, commitIndex 0)
+049792 TIMR S0 T10 reset election timeout. (HeartBeat: 6 -> 0, commitIndex 0)
+050793 TIMR S0 T10 reset election timeout. (HeartBeat: 6 -> 0, commitIndex 0)
+050793 TIMR S4 T10 reset election timeout. (HeartBeat: 6 -> 4, commitIndex 0)
+050793 TIMR S3 T10 reset election timeout. (HeartBeat: 6 -> 3, commitIndex 0)
+050793 TIMR S1 T10 reset election timeout. (HeartBeat: 6 -> 1, commitIndex 0)
+050852 WARN S5 connect
+050853 WARN S2 connect
+050853 WARN S2 connect
+051802 TIMR S0 T10 reset election timeout. (HeartBeat: 6 -> 0, commitIndex 0)
+051802 TERM S5 T9 converting to follower. Term too small (9 -> 10)
+051802 TIMR S5 T10 reset election timeout. (HeartBeat: 6 -> 5, commitIndex 0)
+051803 TIMR S3 T10 reset election timeout. (HeartBeat: 6 -> 3, commitIndex 0)
+051802 TIMR S4 T10 reset election timeout. (HeartBeat: 6 -> 4, commitIndex 0)
+051806 TIMR S2 T10 reset election timeout. (HeartBeat: 6 -> 2, commitIndex 0)
+051807 TIMR S1 T10 reset election timeout. (HeartBeat: 6 -> 1, commitIndex 0)
+052820 TIMR S3 T10 reset election timeout. (HeartBeat: 6 -> 3, commitIndex 0)
+052822 TIMR S0 T10 reset election timeout. (HeartBeat: 6 -> 0, commitIndex 0)
+052825 TIMR S2 T10 reset election timeout. (HeartBeat: 6 -> 2, commitIndex 0)
+052827 TIMR S1 T10 reset election timeout. (HeartBeat: 6 -> 1, commitIndex 0)
+052829 TIMR S5 T10 reset election timeout. (HeartBeat: 6 -> 5, commitIndex 0)
+052830 TIMR S4 T10 reset election timeout. (HeartBeat: 6 -> 4, commitIndex 0)
+053820 TIMR S4 T10 reset election timeout. (HeartBeat: 6 -> 4, commitIndex 0)
+053820 TIMR S1 T10 reset election timeout. (HeartBeat: 6 -> 1, commitIndex 0)
+053821 TIMR S3 T10 reset election timeout. (HeartBeat: 6 -> 3, commitIndex 0)
+053821 TIMR S5 T10 reset election timeout. (HeartBeat: 6 -> 5, commitIndex 0)
+053822 TIMR S2 T10 reset election timeout. (HeartBeat: 6 -> 2, commitIndex 0)
+053822 TIMR S0 T10 reset election timeout. (HeartBeat: 6 -> 0, commitIndex 0)
+054825 TIMR S2 T10 reset election timeout. (HeartBeat: 6 -> 2, commitIndex 0)
+054825 TIMR S5 T10 reset election timeout. (HeartBeat: 6 -> 5, commitIndex 0)
+054825 TIMR S1 T10 reset election timeout. (HeartBeat: 6 -> 1, commitIndex 0)
+054826 TIMR S0 T10 reset election timeout. (HeartBeat: 6 -> 0, commitIndex 0)
+054826 TIMR S4 T10 reset election timeout. (HeartBeat: 6 -> 4, commitIndex 0)
+054827 TIMR S3 T10 reset election timeout. (HeartBeat: 6 -> 3, commitIndex 0)
+--- FAIL: TestManyElections2A (5.55s)
+    testing.go:1465: race detected during execution of test
+FAIL
+exit status 1
+FAIL	6.824/raft	12.887s

@@ -1,0 +1,43 @@
+000005 LOG1 S0, making...
+000008 LOG1 S1, making...
+000008 LOG1 S2, making...
+Test (2B): basic agreement ...
+003916 TIMR S0 T0 follower election timeout, converting to Candidate
+003926 VOTE S1 T0 vote for S0, converting to follower.
+003948 TIMR S1 T1 reset election timeout. (RequestVote: 1 vote for 0)
+003926 VOTE S2 T0 vote for S0, converting to follower.
+003950 TIMR S2 T1 reset election timeout. (RequestVote: 2 vote for 0)
+003951 LEAD S0 T1 achieved majority for term(2), 1 > 1 , converting to Leader! 
+003954 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+003954 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+005459 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+005459 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+006962 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+006962 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+008469 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+008469 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+009978 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+009978 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+011481 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+011481 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+012983 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+012983 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+014490 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+014490 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+015995 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+015995 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+017506 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+017506 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+019009 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+019010 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+020521 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+020521 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+022023 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+022023 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+023526 TIMR S1 T1 reset election timeout. (HeartBeat: 0 -> 1)
+023526 TIMR S2 T1 reset election timeout. (HeartBeat: 0 -> 2)
+--- FAIL: TestBasicAgree2B (2.41s)
+    config.go:602: one(100) failed to reach agreement
+FAIL
+exit status 1
+FAIL	6.824/raft	2.519s

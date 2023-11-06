@@ -102,7 +102,7 @@ const (
 	STATE_FOLLOWER    = 1
 	STATE_CANDIDATE   = 2
 	STATE_LEADER      = 3
-	HeartBeatInterval = 150
+	HeartBeatInterval = 100
 	TimeOut           = -2
 	GetHeartBeat      = -3
 )
@@ -110,7 +110,6 @@ const (
 type LogEntry struct {
 	Command interface{}
 	Term    int
-	Index   int
 }
 
 // as each Raft peer becomes aware that successive log entries are
@@ -159,9 +158,10 @@ type Raft struct {
 	nextIndex  []int
 	matchIndex []int
 
-	status        int         // status
-	electionTimer *time.Timer // 超时重置
-	nPeers        int         // peers 结点个数
+	status             int         // status
+	electionTimer      *time.Timer // 选举超时重置
+	appendEntriesTimer *time.Timer // 追加日志定时器
+	nPeers             int         // peers 结点个数
 }
 
 // return currentTerm and whether this server
@@ -279,26 +279,83 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		rf.voteFor = Null
 		rf.status = STATE_FOLLOWER
 	}
+
 	rf.electionTimer.Reset(randomElectionTimeout())
-	PrettyDebug(dTimer, "S%d T%d reset election timeout. (HeartBeat: %d -> %d)", rf.me, rf.currentTerm,
-		args.LeaderId, rf.me)
-	reply.Success = true
-	reply.Term = rf.currentTerm
+	if len(args.Entries) == 0 {
+		PrettyDebug(dTimer, "S%d T%d reset election timeout. (HeartBeat: %d -> %d, commitIndex %d)", rf.me, rf.currentTerm,
+			args.LeaderId, rf.me, rf.commitIndex)
+		reply.Success = true
+		reply.Term = rf.currentTerm
+		/*
+			TODO: If leaderCommit > commitIndex, set commitIndex = min(leaderCommit, index of last new entry)
+		*/
+		if args.LeaderCommit > rf.commitIndex {
+			rf.commitIndex = min(args.LeaderCommit, len(rf.log)-1)
+		}
+		return
+	}
+
 	/*
 		TODO: Reply false if log doesn’t contain an entry at prevLogIndex whose term matches prevLogTerm
 	*/
+	// 获取最后一条日志的index 和 log 数据
+	last_index := rf.nextIndex[rf.me] - 1
+
+	// 如果此raft的最后一条日志的 index 小于 args 的 PrevLogIndex
+	if last_index < args.PrevLogIndex {
+		PrettyDebug(dLog2, "S%d LAST LOG NOT MATCH. (this.last_index %d < leader.Prev_index %d)", rf.me,
+			last_index, args.PrevLogIndex)
+		reply.Term = rf.currentTerm
+		reply.Success = false
+		return
+	}
+
 	/*
 		TODO: If an existing entry conflicts with a new one (same index but different terms),
 			delete the existing entry and all that follow it
 	*/
-
+	// args.PrevLogIndex 现在可能 等于 last_index 或者小于 last_index
+	// an existing entry term 与 leader 最后一条日志的 term 不一致，直接删除
+	if rf.log[args.PrevLogIndex].Term != args.PrevLogTerm {
+		PrettyDebug(dLog2, "S%d LAST LOG NOT MATCH. (this.sameIndex_term %d != leader.Prev_term %d)", rf.me,
+			rf.log[args.PrevLogIndex].Term, args.PrevLogTerm)
+		rf.log = rf.log[:args.PrevLogIndex]
+		rf.nextIndex[rf.me] = len(rf.log)
+		rf.matchIndex[rf.me] = rf.nextIndex[rf.me] - 1
+		reply.Term = rf.currentTerm
+		reply.Success = false
+		return
+	}
 	/*
 		TODO: Append any new entries not already in the log
 	*/
+	PrettyDebug(dLog2, "S%d %s Term%d append new log, len(rf.log) %d, args.PrevLogIndex %d", rf.me, statusMap[rf.status], rf.currentTerm, len(rf.log), args.PrevLogIndex)
+
+	if args.PrevLogIndex+1 == len(rf.log) {
+		rf.log = append(rf.log[:args.PrevLogIndex+1], args.Entries...)
+	} else {
+		for i := 0; i < len(args.Entries); i++ {
+			index := args.PrevLogIndex + 1 + i
+			if index > len(rf.log) {
+				rf.log = append(rf.log, args.Entries[i])
+			} else {
+				rf.log[index] = args.Entries[i]
+			}
+		}
+	}
+	rf.nextIndex[rf.me] = len(rf.log)
+	rf.matchIndex[rf.me] = rf.nextIndex[rf.me] - 1
 
 	/*
 		TODO: If leaderCommit > commitIndex, set commitIndex = min(leaderCommit, index of last new entry)
 	*/
+	if args.LeaderCommit > rf.commitIndex {
+		rf.commitIndex = min(args.LeaderCommit, len(rf.log)-1)
+	}
+
+	reply.Term = rf.currentTerm
+	reply.Success = true
+	PrettyDebug(dWarn, "S%d %s Term%d append new log, len %d", rf.me, statusMap[rf.status], rf.currentTerm, len(rf.log))
 }
 
 func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
@@ -307,17 +364,22 @@ func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *Ap
 }
 
 func (rf *Raft) startHeartBeat() {
+	rf.mu.Lock()
 	term := rf.currentTerm
+	rf.mu.Unlock()
 	go func() {
 		for rf.killed() == false {
 			currentTerm, isLeader := rf.GetState()
 			if currentTerm != term || !isLeader {
 				break
 			}
+			rf.mu.Lock()
 			args := AppendEntriesArgs{
-				Term:     term,
-				LeaderId: rf.me,
+				Term:         term,
+				LeaderId:     rf.me,
+				LeaderCommit: rf.commitIndex,
 			}
+			rf.mu.Unlock()
 			for index, _ := range rf.peers {
 				if index == rf.me {
 					continue
@@ -356,7 +418,10 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 		rf.status = STATE_FOLLOWER
 		rf.voteFor = args.CandidateId
 	}
-	if rf.voteFor == Null || rf.voteFor == args.CandidateId {
+	last_index := rf.nextIndex[rf.me] - 1
+	last_log := rf.log[last_index]
+	if (rf.voteFor == Null || rf.voteFor == args.CandidateId) &&
+		(args.LastLogTerm > last_log.Term || (args.LastLogTerm == last_log.Term && args.LastLogIndex >= last_index)) {
 		PrettyDebug(dTimer, "S%d T%d reset election timeout. (RequestVote: %d vote for %d)", rf.me, rf.currentTerm,
 			rf.me, args.CandidateId)
 		rf.electionTimer.Reset(randomElectionTimeout())
@@ -419,6 +484,28 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	isLeader := true
 
 	// Your code here (2B).
+	rf.mu.Lock()
+	if rf.status != STATE_LEADER {
+		rf.mu.Unlock()
+		return -1, -1, false
+	}
+
+	index = rf.nextIndex[rf.me]
+	term = rf.currentTerm
+
+	new_log := LogEntry{
+		Term:    term,
+		Command: command,
+	}
+
+	rf.log = append(rf.log, new_log)
+	rf.nextIndex[rf.me]++
+	rf.matchIndex[rf.me]++
+
+	PrettyDebug(dClient, "S%d %s Term %d append new log nextIndex%d matchIndex%d", rf.me, statusMap[rf.status],
+		rf.currentTerm, rf.nextIndex[rf.me], rf.matchIndex[rf.me])
+
+	rf.mu.Unlock()
 
 	return index, term, isLeader
 }
@@ -534,6 +621,121 @@ func (rf *Raft) ticker() {
 	}
 }
 
+func (rf *Raft) LeaderAppendEntries() {
+	for rf.killed() == false {
+		time.Sleep(10 * time.Millisecond)
+		rf.mu.Lock()
+		if rf.status != STATE_LEADER {
+			rf.mu.Unlock()
+			continue
+		}
+		if len(rf.log)-1 <= rf.commitIndex {
+			rf.mu.Unlock()
+			continue
+		}
+
+		appendCh := make(chan bool, rf.nPeers-1)
+		var count int32
+		count = 1
+		PrettyDebug(dLeader, "S%d %s Term %d Broadcast appendEntries", rf.me, statusMap[rf.status], rf.currentTerm)
+		rf.mu.Unlock()
+		for index, _ := range rf.peers {
+			rf.mu.Lock()
+			if rf.status != STATE_LEADER {
+				rf.mu.Unlock()
+				appendCh <- false
+				break
+			}
+
+			if index == rf.me {
+				rf.mu.Unlock()
+				continue
+			}
+
+			args := AppendEntriesArgs{
+				Term:         rf.currentTerm,
+				LeaderId:     rf.me,
+				PrevLogIndex: rf.matchIndex[rf.me] - 1,
+				PrevLogTerm:  rf.log[rf.matchIndex[rf.me]-1].Term,
+				Entries:      make([]LogEntry, 0),
+				LeaderCommit: rf.commitIndex,
+			}
+			args.Entries = append(args.Entries, rf.log[args.PrevLogIndex+1:]...)
+			prevTerm := rf.currentTerm
+			PrettyDebug(dLeader, "S%d prevIndex%d", rf.me, args.PrevLogIndex)
+			rf.mu.Unlock()
+			go func(index int, args AppendEntriesArgs, prevTerm int) {
+
+				reply := AppendEntriesReply{}
+				ok := rf.sendAppendEntries(index, &args, &reply)
+				for ok {
+					rf.mu.Lock()
+					// rpc成功，判断此rf的term是否在rpc期间发生变化
+					if rf.currentTerm != prevTerm {
+						rf.mu.Unlock()
+						return
+					}
+
+					// 收到回复的Term大于当前rf的Term
+					if reply.Term > rf.currentTerm {
+						rf.status = STATE_FOLLOWER
+						rf.voteFor = Null
+						rf.currentTerm = reply.Term
+						rf.mu.Unlock()
+						return
+					}
+
+					if reply.Success {
+						atomic.AddInt32(&count, 1)
+						if atomic.LoadInt32(&count) == int32(rf.nPeers/2+1) {
+							rf.commitIndex = rf.matchIndex[rf.me]
+						}
+						PrettyDebug(dLeader, "S%d %s Term %d appendEntries success: commitIndex%d", rf.me,
+							statusMap[rf.status], rf.currentTerm, rf.commitIndex)
+						rf.mu.Unlock()
+						return
+					} else {
+						if args.PrevLogIndex > 1 {
+							args.PrevLogIndex--
+							args.PrevLogTerm = rf.log[args.PrevLogIndex].Term
+							args.Entries = rf.log[args.PrevLogIndex+1:]
+						}
+						rf.mu.Unlock()
+						ok = rf.sendAppendEntries(index, &args, &reply)
+					}
+				}
+			}(index, args, prevTerm)
+		}
+		for atomic.LoadInt32(&count) < int32(rf.nPeers) {
+			continue
+		}
+	}
+}
+
+func (rf *Raft) ApplyCheck(applyCh chan ApplyMsg) {
+	for rf.killed() == false {
+		time.Sleep(10 * time.Millisecond)
+		rf.mu.Lock()
+		var appliedMsgs = make([]ApplyMsg, 0)
+		for rf.commitIndex > rf.lastApplied {
+			rf.lastApplied++
+			msg := ApplyMsg{
+				CommandValid: true,
+				Command:      rf.log[rf.lastApplied].Command,
+				CommandIndex: rf.lastApplied,
+			}
+			PrettyDebug(dCommit, "S%d %s Term%d commit{CommandIndex:%d}", rf.me, statusMap[rf.status],
+				rf.currentTerm, rf.lastApplied)
+			appliedMsgs = append(appliedMsgs, msg)
+		}
+		rf.mu.Unlock()
+		for _, msg := range appliedMsgs {
+			PrettyDebug(dCommit, "S%d %s Term%d commit", rf.me, statusMap[rf.status], rf.currentTerm)
+			applyCh <- msg
+		}
+	}
+}
+
 // the service or tester wants to create a Raft server. the ports
 // of all the Raft servers (including this one) are in peers[]. this
 // server's port is peers[me]. all the servers' peers[] arrays
@@ -558,10 +760,16 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	for index, _ := range rf.nextIndex {
 		rf.nextIndex[index] = 1
 	}
-	rf.log = make([]LogEntry, 1024)
-	rf.log[0] = LogEntry{Term: 0, Index: 0}
+	rf.matchIndex = make([]int, len(peers))
+	for index, _ := range rf.matchIndex {
+		rf.matchIndex[index] = 0
+	}
+	rf.log = append(rf.log, LogEntry{Term: 0})
 	rf.nPeers = len(peers)
 	rf.electionTimer = time.NewTimer(randomElectionTimeout())
+
+	rf.lastApplied = 0
+
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
 
@@ -569,6 +777,12 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
 	// start ticker goroutine to start elections
 	go rf.ticker()
+
+	// start LeaderAppendEntries to let leader append Entries
+	go rf.LeaderAppendEntries()
+
+	// start apply goroutine to send applyMsg to applyCh
+	go rf.ApplyCheck(applyCh)
 
 	return rf
 }

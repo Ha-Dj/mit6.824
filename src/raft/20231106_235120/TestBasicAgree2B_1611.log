@@ -1,0 +1,116 @@
+000006 LOG1 S0, making...
+000011 LOG1 S1, making...
+000012 LOG1 S2, making...
+Test (2B): basic agreement ...
+003814 TIMR S1 T0 follower election timeout, converting to Candidate
+003827 TIMR S0 T0 follower election timeout, converting to Candidate
+003827 VOTE S2 T0 vote for S1, converting to follower.
+003828 VOTE S0 T0 vote for S1, converting to follower.
+003828 TIMR S2 T1 reset election timeout. (RequestVote: 2 vote for 1)
+003828 TIMR S0 T1 reset election timeout. (RequestVote: 0 vote for 1)
+003832 LEAD S1 T1 achieved majority for term(2), 1 > 1 , converting to Leader! 
+003832 VOTE S1 T1 vote for S0, converting to follower.
+003833 VOTE S2 T1 vote for S0, converting to follower.
+003833 TIMR S2 T2 reset election timeout. (RequestVote: 2 vote for 0)
+==================
+WARNING: DATA RACE
+Write at 0x00c0000ce1b8 by goroutine 35:
+  6.824/raft.(*Raft).RequestVote()
+      /Users/dengjie/mit6.824/6.824/src/raft/raft.go:413 +0x19c
+  runtime.call32()
+      /usr/local/go/src/runtime/asm_arm64.s:479 +0x74
+  reflect.Value.Call()
+      /usr/local/go/src/reflect/value.go:380 +0x90
+  6.824/labrpc.(*Service).dispatch()
+      /Users/dengjie/mit6.824/6.824/src/labrpc/labrpc.go:496 +0x334
+  6.824/labrpc.(*Server).dispatch()
+      /Users/dengjie/mit6.824/6.824/src/labrpc/labrpc.go:420 +0x1f0
+  6.824/labrpc.(*Network).processReq.func1()
+      /Users/dengjie/mit6.824/6.824/src/labrpc/labrpc.go:240 +0x84
+
+Previous read at 0x00c0000ce1b8 by goroutine 37:
+  6.824/raft.(*Raft).startHeartBeat()
+      /Users/dengjie/mit6.824/6.824/src/raft/raft.go:367 +0x30
+  6.824/raft.(*Raft).startElection.func3()
+      /Users/dengjie/mit6.824/6.824/src/raft/raft.go:591 +0x34
+
+Goroutine 35 (running) created at:
+  6.824/labrpc.(*Network).processReq()
+      /Users/dengjie/mit6.824/6.824/src/labrpc/labrpc.go:239 +0x20c
+  6.824/labrpc.MakeNetwork.func1.1()
+      /Users/dengjie/mit6.824/6.824/src/labrpc/labrpc.go:157 +0x84
+
+Goroutine 37 (finished) created at:
+  6.824/raft.(*Raft).startElection()
+      /Users/dengjie/mit6.824/6.824/src/raft/raft.go:591 +0x550
+  6.824/raft.(*Raft).ticker.func1()
+      /Users/dengjie/mit6.824/6.824/src/raft/raft.go:615 +0x34
+==================
+003842 TIMR S1 T2 reset election timeout. (RequestVote: 1 vote for 0)
+007514 TIMR S2 T2 follower election timeout, converting to Candidate
+007517 VOTE S0 T2 vote for S2, converting to follower.
+007517 VOTE S1 T2 vote for S2, converting to follower.
+007518 TIMR S0 T3 reset election timeout. (RequestVote: 0 vote for 2)
+007518 TIMR S1 T3 reset election timeout. (RequestVote: 1 vote for 2)
+007519 LEAD S2 T3 achieved majority for term(2), 1 > 3 , converting to Leader! 
+007523 TIMR S1 T3 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+007523 TIMR S0 T3 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+007594 CLNT S2 leader Term 3 append new log nextIndex2 matchIndex1
+007660 LEAD S2 leader Term 3 Broadcast appendEntries
+007660 LEAD S2 prevIndex0
+007661 LEAD S2 prevIndex0
+007664 LOG2 S1 follower Term3 append new log, len(rf.log) 1, args.PrevLogIndex 0
+007664 LOG2 S0 follower Term3 append new log, len(rf.log) 1, args.PrevLogIndex 0
+007664 WARN S1 follower Term3 append new log, len 2
+007664 WARN S0 follower Term3 append new log, len 2
+007665 LEAD S2 leader Term 3 appendEntries success: commitIndex1
+007665 LEAD S2 leader Term 3 appendEntries success: commitIndex1
+007770 CMIT S2 leader Term3 commit{CommandIndex:1}
+007771 CMIT S2 leader Term3 commit
+009027 TIMR S1 T3 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 0)
+009030 CMIT S1 follower Term3 commit{CommandIndex:1}
+009030 CMIT S1 follower Term3 commit
+009035 TIMR S0 T3 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 0)
+009141 CMIT S0 follower Term3 commit{CommandIndex:1}
+009142 CMIT S0 follower Term3 commit
+009220 CLNT S2 leader Term 3 append new log nextIndex3 matchIndex2
+009244 LEAD S2 leader Term 3 Broadcast appendEntries
+009244 LEAD S2 prevIndex1
+009245 LEAD S2 prevIndex1
+009252 LOG2 S1 follower Term3 append new log, len(rf.log) 2, args.PrevLogIndex 1
+009252 LOG2 S0 follower Term3 append new log, len(rf.log) 2, args.PrevLogIndex 1
+009253 WARN S0 follower Term3 append new log, len 3
+009252 WARN S1 follower Term3 append new log, len 3
+009257 LEAD S2 leader Term 3 appendEntries success: commitIndex2
+009258 LEAD S2 leader Term 3 appendEntries success: commitIndex2
+009354 CMIT S2 leader Term3 commit{CommandIndex:2}
+009355 CMIT S2 leader Term3 commit
+010524 TIMR S1 T3 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 1)
+010526 TIMR S0 T3 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 1)
+010620 CMIT S1 follower Term3 commit{CommandIndex:2}
+010620 CMIT S0 follower Term3 commit{CommandIndex:2}
+010620 CMIT S1 follower Term3 commit
+010620 CMIT S0 follower Term3 commit
+010659 CLNT S2 leader Term 3 append new log nextIndex4 matchIndex3
+010727 LEAD S2 leader Term 3 Broadcast appendEntries
+010728 LEAD S2 prevIndex2
+010728 LEAD S2 prevIndex2
+010730 LOG2 S0 follower Term3 append new log, len(rf.log) 3, args.PrevLogIndex 2
+010730 WARN S0 follower Term3 append new log, len 4
+010730 LOG2 S1 follower Term3 append new log, len(rf.log) 3, args.PrevLogIndex 2
+010731 WARN S1 follower Term3 append new log, len 4
+010731 LEAD S2 leader Term 3 appendEntries success: commitIndex3
+010732 LEAD S2 leader Term 3 appendEntries success: commitIndex3
+010835 CMIT S2 leader Term3 commit{CommandIndex:3}
+010835 CMIT S2 leader Term3 commit
+012033 TIMR S1 T3 reset election timeout. (HeartBeat: 2 -> 1, commitIndex 2)
+012033 TIMR S0 T3 reset election timeout. (HeartBeat: 2 -> 0, commitIndex 2)
+012100 CMIT S1 follower Term3 commit{CommandIndex:3}
+012100 CMIT S0 follower Term3 commit{CommandIndex:3}
+012101 CMIT S1 follower Term3 commit
+012101 CMIT S0 follower Term3 commit
+--- FAIL: TestBasicAgree2B (1.23s)
+    testing.go:1465: race detected during execution of test
+FAIL
+exit status 1
+FAIL	6.824/raft	17.889s
