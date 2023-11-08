@@ -269,6 +269,11 @@ type AppendEntriesReply struct {
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	if len(args.Entries) != 0 {
+		PrettyDebug(dLog2, "S%d T%d received appendEntries rpc args:{Term%d, LeaderId%d, PrevLogIndex%d, "+
+			"PrevLogTerm%d, len(Entries)%d, LeaderCommit%d}", rf.me, rf.currentTerm, args.Term, args.LeaderId,
+			args.PrevLogIndex, args.PrevLogTerm, len(args.Entries), args.LeaderCommit)
+	}
 	rf.electionTimer.Reset(randomElectionTimeout())
 	// log.Printf("%d Get HeartBeat!", rf.me)
 	// 如果 args's term < currentTerm, return false
@@ -340,7 +345,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	} else {
 		for i := 0; i < len(args.Entries); i++ {
 			index := args.PrevLogIndex + 1 + i
-			if index > len(rf.log) {
+			if index >= len(rf.log) {
 				rf.log = append(rf.log, args.Entries[i])
 			} else {
 				rf.log[index] = args.Entries[i]
@@ -349,7 +354,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	}
 	rf.nextIndex[rf.me] = len(rf.log)
 	rf.matchIndex[rf.me] = rf.nextIndex[rf.me] - 1
-	PrettyDebug(dWarn, "S%d after append nextIndex%d matchIndex%d", rf.me, rf.nextIndex[rf.me], rf.matchIndex[rf.me])
+	PrettyDebug(dLog2, "S%d after append nextIndex%d matchIndex%d", rf.me, rf.nextIndex[rf.me], rf.matchIndex[rf.me])
 
 	/*
 		TODO: If leaderCommit > commitIndex, set commitIndex = min(leaderCommit, index of last new entry)
@@ -360,7 +365,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 
 	reply.Term = rf.currentTerm
 	reply.Success = true
-	PrettyDebug(dWarn, "S%d %s Term%d append new log, len %d", rf.me, statusMap[rf.status], rf.currentTerm, len(rf.log))
+	PrettyDebug(dLog2, "S%d %s Term%d append new log, len %d", rf.me, statusMap[rf.status], rf.currentTerm, len(rf.log))
 }
 
 func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
@@ -674,24 +679,26 @@ func (rf *Raft) LeaderAppendEntries() {
 			rf.mu.Unlock()
 			return
 		}
-		// 判断是否有需要发送的log
-		if len(rf.log)-1 <= rf.commitIndex {
-			rf.mu.Unlock()
-			return
-		}
 		// 生成发送的args
+		PrevIndex := 0
+		if rf.matchIndex[rf.me] >= 1 {
+			PrevIndex = rf.matchIndex[rf.me] - 1
+		}
+		PrevTerm := rf.log[PrevIndex].Term
 		args := AppendEntriesArgs{
 			Term:         rf.currentTerm,
 			LeaderId:     rf.me,
-			PrevLogIndex: rf.matchIndex[rf.me] - 1,
-			PrevLogTerm:  rf.log[rf.matchIndex[rf.me]-1].Term,
+			PrevLogIndex: PrevIndex,
+			PrevLogTerm:  PrevTerm,
 			Entries:      make([]LogEntry, 0),
 			LeaderCommit: rf.commitIndex,
 		}
 		args.Entries = append(args.Entries, rf.log[args.PrevLogIndex+1:]...)
 		// 记录当前term
 		prevTerm := rf.currentTerm
-		PrettyDebug(dLeader, "S%d %s T%d Broadcast appendEntries", rf.me, statusMap[rf.status], rf.currentTerm)
+		// PrettyDebug(dLeader, "S%d %s T%d Broadcast appendEntries", rf.me, statusMap[rf.status], rf.currentTerm)
+		leader_matchIndex := rf.matchIndex[rf.me]
+		leader_nextIndex := rf.nextIndex[rf.me]
 		rf.mu.Unlock()
 
 		// 用于同步reply的管道
@@ -716,6 +723,12 @@ func (rf *Raft) LeaderAppendEntries() {
 			}
 			// 如果不需要发送直接continue
 			if rf.nextIndex[rf.me]-1 < rf.nextIndex[index] {
+				sum_mu.Lock()
+				sum++
+				if sum == rf.nPeers {
+					doneCh <- struct{}{}
+				}
+				sum_mu.Unlock()
 				rf.mu.Unlock()
 				continue
 			}
@@ -745,7 +758,6 @@ func (rf *Raft) LeaderAppendEntries() {
 				}
 				for {
 					rf.mu.Lock()
-
 					// rpc成功，判断是否还是最初的任期
 					if rf.currentTerm != prevTerm || rf.status != STATE_LEADER {
 						rf.mu.Unlock()
@@ -764,14 +776,19 @@ func (rf *Raft) LeaderAppendEntries() {
 					}
 
 					if reply.Success {
-						PrettyDebug(dLeader, "S%d %s T%d appendEntries success: log_len%d", rf.me,
-							statusMap[rf.status], rf.currentTerm, len(rf.log))
-						rf.nextIndex[index] = len(rf.log)
-						rf.matchIndex[index] = len(rf.log) - 1
+						PrettyDebug(dWarn, "S%d %s T%d appendEntries success: log_len%d,", index,
+							statusMap[index], rf.currentTerm, len(rf.log))
+
+						// TODO : 感觉不应该加 len(args.Entries)
+						rf.nextIndex[index] = leader_nextIndex
+						rf.matchIndex[index] = leader_matchIndex
+						// TODO : 感觉不应该加 len(args.Entries)
 						rf.mu.Unlock()
 						return
 					} else {
+						PrettyDebug(dLeader, "S%d here", rf.me, args.PrevLogIndex)
 						if args.PrevLogIndex >= 1 {
+							PrettyDebug(dLeader, "S%d PrevLogIndex%d--", rf.me, args.PrevLogIndex)
 							args.PrevLogIndex--
 							args.PrevLogTerm = rf.log[args.PrevLogIndex].Term
 							args.Entries = rf.log[args.PrevLogIndex+1:]
@@ -810,7 +827,8 @@ func (rf *Raft) updateCommitIndex() {
 			return
 		}
 		//PrettyDebug(dCommit, "S%d update check commit", rf.me)
-		for N := rf.commitIndex + 1; N < rf.nextIndex[rf.me]; N++ {
+		for N := rf.nextIndex[rf.me] - 1; N > rf.commitIndex; N-- {
+			// for N := rf.commitIndex + 1; N < rf.nextIndex[rf.me]; N++ {
 			if N > rf.commitIndex && rf.log[N].Term == rf.currentTerm {
 				count := 1
 				for id, _ := range rf.peers {
@@ -819,12 +837,14 @@ func (rf *Raft) updateCommitIndex() {
 					}
 					//PrettyDebug(dCommit, "S%d update commit count%d matchIndex[%d]%d", rf.me, count, id, rf.matchIndex[id])
 					if rf.matchIndex[id] >= N {
+						PrettyDebug(dCommit, "S%d matchIndex > %d, count++", rf.commitIndex, N)
 						count++
 					}
 				}
 				if count >= rf.nPeers/2+1 {
 					rf.commitIndex = N
 					PrettyDebug(dCommit, "S%d commit %d", rf.me, rf.commitIndex)
+					break
 				}
 			}
 		}
