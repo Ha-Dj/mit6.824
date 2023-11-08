@@ -63,15 +63,14 @@ func TestReElection2A(t *testing.T) {
 
 	// if the leader disconnects, a new one should be elected.
 	cfg.disconnect(leader1)
-	//log.Println("------------------------------------")
-	//log.Printf("Server %d disconnect", leader1)
-	//log.Println("------------------------------------")
+	PrettyDebug(dWarn, "S%d disconnect", leader1)
 	cfg.checkOneLeader()
 
 	// if the old leader rejoins, that shouldn't
 	// disturb the new leader. and the old leader
 	// should switch to follower.
 	cfg.connect(leader1)
+	PrettyDebug(dWarn, "S%d connect", leader1)
 	//log.Println("------------------------------------")
 	//log.Printf("Server %d connect", leader1)
 	//log.Println("------------------------------------")
@@ -80,10 +79,12 @@ func TestReElection2A(t *testing.T) {
 	// if there's no quorum, no new leader should
 	// be elected.
 	cfg.disconnect(leader2)
+	PrettyDebug(dWarn, "S%d disconnect", leader2)
 	//log.Println("------------------------------------")
 	//log.Printf("Server %d disconnect", leader2)
 	//log.Println("------------------------------------")
 	cfg.disconnect((leader2 + 1) % servers)
+	PrettyDebug(dWarn, "S%d disconnect", (leader2+1)%servers)
 	//log.Println("------------------------------------")
 	//log.Printf("Server %d disconnect", (leader2+1)%servers)
 	//log.Println("------------------------------------")
@@ -96,6 +97,7 @@ func TestReElection2A(t *testing.T) {
 
 	// if a quorum arises, it should elect a leader.
 	cfg.connect((leader2 + 1) % servers)
+	PrettyDebug(dWarn, "S%d connect", (leader2+1)%servers)
 	//log.Println("------------------------------------")
 	//log.Printf("Server %d connect", (leader2+1)%servers)
 	//log.Println("------------------------------------")
@@ -103,6 +105,7 @@ func TestReElection2A(t *testing.T) {
 
 	// re-join of last node shouldn't prevent leader from existing.
 	cfg.connect(leader2)
+	PrettyDebug(dWarn, "S%d connect", leader2)
 	//log.Println("------------------------------------")
 	//log.Printf("Server %d connect", leader2)
 	//log.Println("------------------------------------")
@@ -358,8 +361,11 @@ func TestFailNoAgree2B(t *testing.T) {
 	// 3 of 5 followers disconnect
 	leader := cfg.checkOneLeader()
 	cfg.disconnect((leader + 1) % servers)
+	PrettyDebug(dClient, "S%d disconnect", (leader+1)%servers)
 	cfg.disconnect((leader + 2) % servers)
+	PrettyDebug(dClient, "S%d disconnect", (leader+2)%servers)
 	cfg.disconnect((leader + 3) % servers)
+	PrettyDebug(dClient, "S%d disconnect", (leader+3)%servers)
 
 	index, _, ok := cfg.rafts[leader].Start(20)
 	if ok != true {
@@ -378,8 +384,11 @@ func TestFailNoAgree2B(t *testing.T) {
 
 	// repair
 	cfg.connect((leader + 1) % servers)
+	PrettyDebug(dClient, "S%d connect", (leader+1)%servers)
 	cfg.connect((leader + 2) % servers)
+	PrettyDebug(dClient, "S%d connect", (leader+1)%servers)
 	cfg.connect((leader + 3) % servers)
+	PrettyDebug(dClient, "S%d connect", (leader+1)%servers)
 
 	// the disconnected majority may have chosen a leader from
 	// among their own ranks, forgetting index 2.
@@ -510,6 +519,7 @@ func TestRejoin2B(t *testing.T) {
 	// leader network failure
 	leader1 := cfg.checkOneLeader()
 	cfg.disconnect(leader1)
+	PrettyDebug(dLeader, "S%d disconnect", leader1)
 
 	// make old leader try to agree on some entries
 	cfg.rafts[leader1].Start(102)
@@ -518,18 +528,21 @@ func TestRejoin2B(t *testing.T) {
 
 	// new leader commits, also for index=2
 	cfg.one(103, 2, true)
-
+	fmt.Println("103 success")
 	// new leader network failure
 	leader2 := cfg.checkOneLeader()
 	cfg.disconnect(leader2)
+	PrettyDebug(dLeader, "S%d disconnect", leader2)
 
 	// old leader connected again
 	cfg.connect(leader1)
+	PrettyDebug(dLeader, "S%d connect", leader1)
 
 	cfg.one(104, 2, true)
-
+	fmt.Println("104 success")
 	// all together now
 	cfg.connect(leader2)
+	PrettyDebug(dLeader, "S%d connect", leader2)
 
 	cfg.one(105, servers, true)
 

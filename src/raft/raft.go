@@ -98,13 +98,14 @@ var statusMap = map[int]string{
 // ---------------------------for debug---------------------------
 
 const (
-	Null              = -1
-	STATE_FOLLOWER    = 1
-	STATE_CANDIDATE   = 2
-	STATE_LEADER      = 3
-	HeartBeatInterval = 100
-	TimeOut           = -2
-	GetHeartBeat      = -3
+	Null                      = -1
+	STATE_FOLLOWER            = 1
+	STATE_CANDIDATE           = 2
+	STATE_LEADER              = 3
+	HeartBeatInterval         = 100
+	AppendEntriesInterval     = 10
+	ApplyInterval             = 10
+	UpdateCommitIndexInterval = 5
 )
 
 type LogEntry struct {
@@ -161,6 +162,9 @@ type Raft struct {
 	status             int         // status
 	electionTimer      *time.Timer // 选举超时重置
 	appendEntriesTimer *time.Timer // 追加日志定时器
+	heartBeatTimer     *time.Timer // 心跳定时器
+	applyTimer         *time.Timer // apply定时器
+	updateCommitTimer  *time.Timer // updateCommitIndexTimer
 	nPeers             int         // peers 结点个数
 }
 
@@ -265,6 +269,7 @@ type AppendEntriesReply struct {
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	rf.electionTimer.Reset(randomElectionTimeout())
 	// log.Printf("%d Get HeartBeat!", rf.me)
 	// 如果 args's term < currentTerm, return false
 	if args.Term < rf.currentTerm {
@@ -273,27 +278,26 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		return
 	}
 	if args.Term > rf.currentTerm {
-		PrettyDebug(dTerm, "S%d T%d converting to follower. Term too small (%d -> %d)", rf.me, rf.currentTerm,
+		PrettyDebug(dTerm, "S%d T%d converting to follower. Term too small1 (%d -> %d)", rf.me, rf.currentTerm,
 			rf.currentTerm, args.Term)
 		rf.currentTerm = args.Term
 		rf.voteFor = Null
 		rf.status = STATE_FOLLOWER
 	}
 
-	rf.electionTimer.Reset(randomElectionTimeout())
-	if len(args.Entries) == 0 {
-		PrettyDebug(dTimer, "S%d T%d reset election timeout. (HeartBeat: %d -> %d, commitIndex %d)", rf.me, rf.currentTerm,
-			args.LeaderId, rf.me, rf.commitIndex)
-		reply.Success = true
-		reply.Term = rf.currentTerm
-		/*
-			TODO: If leaderCommit > commitIndex, set commitIndex = min(leaderCommit, index of last new entry)
-		*/
-		if args.LeaderCommit > rf.commitIndex {
-			rf.commitIndex = min(args.LeaderCommit, len(rf.log)-1)
-		}
-		return
-	}
+	//if len(args.Entries) == 0 {
+	//	PrettyDebug(dTimer, "S%d T%d reset election timeout. (HeartBeat: %d -> %d, commitIndex %d)", rf.me, rf.currentTerm,
+	//		args.LeaderId, rf.me, rf.commitIndex)
+	//	reply.Success = true
+	//	reply.Term = rf.currentTerm
+	//	/*
+	//		TODO: If leaderCommit > commitIndex, set commitIndex = min(leaderCommit, index of last new entry)
+	//	*/
+	//	if args.LeaderCommit > rf.commitIndex {
+	//		rf.commitIndex = min(args.LeaderCommit, len(rf.log)-1)
+	//	}
+	//	return
+	//}
 
 	/*
 		TODO: Reply false if log doesn’t contain an entry at prevLogIndex whose term matches prevLogTerm
@@ -329,7 +333,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	/*
 		TODO: Append any new entries not already in the log
 	*/
-	PrettyDebug(dLog2, "S%d %s Term%d append new log, len(rf.log) %d, args.PrevLogIndex %d", rf.me, statusMap[rf.status], rf.currentTerm, len(rf.log), args.PrevLogIndex)
+	PrettyDebug(dLog2, "S%d %s T%d append new log, len(rf.log) %d, args.PrevLogIndex %d", rf.me, statusMap[rf.status], rf.currentTerm, len(rf.log), args.PrevLogIndex)
 
 	if args.PrevLogIndex+1 == len(rf.log) {
 		rf.log = append(rf.log[:args.PrevLogIndex+1], args.Entries...)
@@ -345,6 +349,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	}
 	rf.nextIndex[rf.me] = len(rf.log)
 	rf.matchIndex[rf.me] = rf.nextIndex[rf.me] - 1
+	PrettyDebug(dWarn, "S%d after append nextIndex%d matchIndex%d", rf.me, rf.nextIndex[rf.me], rf.matchIndex[rf.me])
 
 	/*
 		TODO: If leaderCommit > commitIndex, set commitIndex = min(leaderCommit, index of last new entry)
@@ -364,39 +369,37 @@ func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *Ap
 }
 
 func (rf *Raft) startHeartBeat() {
-	rf.mu.Lock()
-	term := rf.currentTerm
-	rf.mu.Unlock()
 	go func() {
-		for rf.killed() == false {
-			currentTerm, isLeader := rf.GetState()
-			if currentTerm != term || !isLeader {
-				break
-			}
-			rf.mu.Lock()
-			args := AppendEntriesArgs{
-				Term:         term,
-				LeaderId:     rf.me,
-				LeaderCommit: rf.commitIndex,
-			}
+		rf.mu.Lock()
+		if rf.status != STATE_LEADER {
 			rf.mu.Unlock()
-			for index, _ := range rf.peers {
-				if index == rf.me {
-					continue
-				}
-				go func(index int) {
-					reply := AppendEntriesReply{}
-					ok := rf.sendAppendEntries(index, &args, &reply)
-					rf.mu.Lock()
-					if ok && reply.Term > rf.currentTerm {
-						rf.currentTerm = reply.Term
-						rf.status = STATE_FOLLOWER
-						rf.voteFor = Null
-					}
-					rf.mu.Unlock()
-				}(index)
+			return
+		}
+		args := AppendEntriesArgs{
+			Term:         rf.currentTerm,
+			LeaderId:     rf.me,
+			PrevLogIndex: rf.nextIndex[rf.me] - 1,
+			PrevLogTerm:  rf.log[rf.nextIndex[rf.me]-1].Term,
+			Entries:      make([]LogEntry, 0),
+			LeaderCommit: rf.commitIndex,
+		}
+		rf.mu.Unlock()
+		for index, _ := range rf.peers {
+			if index == rf.me {
+				continue
 			}
-			time.Sleep(time.Duration(HeartBeatInterval) * time.Millisecond)
+			go func(index int) {
+				reply := AppendEntriesReply{}
+				ok := rf.sendAppendEntries(index, &args, &reply)
+				rf.mu.Lock()
+				if ok && reply.Term > rf.currentTerm {
+					rf.currentTerm = reply.Term
+					PrettyDebug(dLeader, "S%d turn to follower : find bigger term", rf.me)
+					rf.status = STATE_FOLLOWER
+					rf.voteFor = Null
+				}
+				rf.mu.Unlock()
+			}(index)
 		}
 	}()
 }
@@ -412,21 +415,24 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 		return
 	}
 	if args.Term > rf.currentTerm {
-		PrettyDebug(dVote, "S%d T%d vote for S%d, converting to follower.", rf.me, rf.currentTerm,
-			args.CandidateId)
 		rf.currentTerm = args.Term
 		rf.status = STATE_FOLLOWER
-		rf.voteFor = args.CandidateId
+		rf.voteFor = Null
 	}
 	last_index := rf.nextIndex[rf.me] - 1
 	last_log := rf.log[last_index]
+	PrettyDebug(dVote, "S%d T%d received RequestVote from S%d T%d (args.LastLogTerm%d, last_log.Term%d, "+
+		"args.LastLogIndex%d, last_index%d)", rf.me, rf.currentTerm, args.CandidateId, args.Term, args.LastLogTerm, last_log.Term, args.LastLogIndex, last_index)
 	if (rf.voteFor == Null || rf.voteFor == args.CandidateId) &&
 		(args.LastLogTerm > last_log.Term || (args.LastLogTerm == last_log.Term && args.LastLogIndex >= last_index)) {
-		PrettyDebug(dTimer, "S%d T%d reset election timeout. (RequestVote: %d vote for %d)", rf.me, rf.currentTerm,
-			rf.me, args.CandidateId)
+		//PrettyDebug(dTimer, "S%d T%d reset election timeout. (RequestVote: %d vote for %d)", rf.me, rf.currentTerm,
+		//	rf.me, args.CandidateId)
 		rf.electionTimer.Reset(randomElectionTimeout())
+		rf.voteFor = args.CandidateId
 		reply.VoteGranted = true
 		reply.Term = rf.currentTerm
+		PrettyDebug(dVote, "S%d T%d Vote For S%d T%d", rf.me, rf.currentTerm, args.CandidateId,
+			args.Term)
 		return
 	}
 
@@ -530,17 +536,20 @@ func (rf *Raft) killed() bool {
 }
 
 func randomElectionTimeout() time.Duration {
-	return time.Duration(350+rand.Intn(150)) * time.Millisecond
+	return time.Duration(350+rand.Intn(250)) * time.Millisecond
 }
 
 func (rf *Raft) startElection() {
 	rf.mu.Lock()
+	PrettyDebug(dTimer, "S%d T%d start election", rf.me, rf.currentTerm)
 	rf.currentTerm++
+	rf.status = STATE_CANDIDATE
 	rf.voteFor = rf.me
-	rf.electionTimer.Reset(randomElectionTimeout())
 	args := RequestVoteArgs{
-		Term:        rf.currentTerm,
-		CandidateId: rf.me,
+		Term:         rf.currentTerm,
+		CandidateId:  rf.me,
+		LastLogIndex: rf.nextIndex[rf.me] - 1,
+		LastLogTerm:  rf.log[rf.nextIndex[rf.me]-1].Term,
 	}
 	rf.mu.Unlock()
 
@@ -590,9 +599,10 @@ func (rf *Raft) startElection() {
 			rf.mu.Lock()
 			rf.status = STATE_LEADER
 			PrettyDebug(dLeader, "S%d T%d achieved majority for term(%d), %d > %d , converting to Leader! ", rf.me,
-				rf.currentTerm, voteGrantedCnt, rf.nPeers/2, rf.currentTerm)
+				rf.currentTerm, rf.currentTerm, voteGrantedCnt, rf.nPeers/2)
+			rf.heartBeatTimer.Reset(0)
+			go rf.updateCommitIndex()
 			rf.mu.Unlock()
-			go rf.startHeartBeat()
 			break
 		}
 
@@ -613,71 +623,139 @@ func (rf *Raft) ticker() {
 				rf.mu.Unlock()
 				break
 			}
-			PrettyDebug(dTimer, "S%d T%d %s election timeout, converting to Candidate", rf.me, rf.currentTerm, statusMap[rf.status])
-			rf.status = STATE_CANDIDATE
-			rf.mu.Unlock()
 			go rf.startElection()
+			rf.electionTimer.Reset(randomElectionTimeout())
+			rf.mu.Unlock()
+		case <-rf.heartBeatTimer.C:
+			rf.mu.Lock()
+			if rf.status == STATE_LEADER {
+				rf.startHeartBeat()
+			}
+			rf.heartBeatTimer.Reset(HeartBeatInterval * time.Millisecond)
+			rf.mu.Unlock()
+			break
+		}
+	}
+}
+
+func (rf *Raft) appendEntriesTicker() {
+	for rf.killed() == false {
+		select {
+		case <-rf.appendEntriesTimer.C:
+			rf.mu.Lock()
+			if rf.status == STATE_LEADER {
+				rf.LeaderAppendEntries()
+			}
+			rf.appendEntriesTimer.Reset(AppendEntriesInterval * time.Millisecond)
+			rf.mu.Unlock()
+			break
+		}
+	}
+}
+
+func (rf *Raft) applyTicker(applyCh chan ApplyMsg) {
+	for rf.killed() == false {
+		select {
+		case <-rf.applyTimer.C:
+			rf.mu.Lock()
+			rf.applyCheck(applyCh)
+			rf.applyTimer.Reset(ApplyInterval * time.Millisecond)
+			rf.mu.Unlock()
+			break
 		}
 	}
 }
 
 func (rf *Raft) LeaderAppendEntries() {
-	for rf.killed() == false {
-		time.Sleep(10 * time.Millisecond)
+	go func() {
 		rf.mu.Lock()
+		// 判断是否还是leader
 		if rf.status != STATE_LEADER {
 			rf.mu.Unlock()
-			continue
+			return
 		}
+		// 判断是否有需要发送的log
 		if len(rf.log)-1 <= rf.commitIndex {
 			rf.mu.Unlock()
-			continue
+			return
 		}
-
-		appendCh := make(chan bool, rf.nPeers-1)
-		var count int32
-		count = 1
-		PrettyDebug(dLeader, "S%d %s Term %d Broadcast appendEntries", rf.me, statusMap[rf.status], rf.currentTerm)
+		// 生成发送的args
+		args := AppendEntriesArgs{
+			Term:         rf.currentTerm,
+			LeaderId:     rf.me,
+			PrevLogIndex: rf.matchIndex[rf.me] - 1,
+			PrevLogTerm:  rf.log[rf.matchIndex[rf.me]-1].Term,
+			Entries:      make([]LogEntry, 0),
+			LeaderCommit: rf.commitIndex,
+		}
+		args.Entries = append(args.Entries, rf.log[args.PrevLogIndex+1:]...)
+		// 记录当前term
+		prevTerm := rf.currentTerm
+		PrettyDebug(dLeader, "S%d %s T%d Broadcast appendEntries", rf.me, statusMap[rf.status], rf.currentTerm)
 		rf.mu.Unlock()
+
+		// 用于同步reply的管道
+		doneCh := make(chan struct{}, 1)
+
+		sum := 1
+		sum_mu := sync.Mutex{}
+
+		// 向所有结点发送 log同步 rpc
 		for index, _ := range rf.peers {
 			rf.mu.Lock()
+
+			// 判断是否还是leader
 			if rf.status != STATE_LEADER {
 				rf.mu.Unlock()
-				appendCh <- false
 				break
 			}
-
+			// 如果是自身直接continue
 			if index == rf.me {
 				rf.mu.Unlock()
 				continue
 			}
-
-			args := AppendEntriesArgs{
-				Term:         rf.currentTerm,
-				LeaderId:     rf.me,
-				PrevLogIndex: rf.matchIndex[rf.me] - 1,
-				PrevLogTerm:  rf.log[rf.matchIndex[rf.me]-1].Term,
-				Entries:      make([]LogEntry, 0),
-				LeaderCommit: rf.commitIndex,
+			// 如果不需要发送直接continue
+			if rf.nextIndex[rf.me]-1 < rf.nextIndex[index] {
+				rf.mu.Unlock()
+				continue
 			}
-			args.Entries = append(args.Entries, rf.log[args.PrevLogIndex+1:]...)
-			prevTerm := rf.currentTerm
-			PrettyDebug(dLeader, "S%d prevIndex%d", rf.me, args.PrevLogIndex)
 			rf.mu.Unlock()
-			go func(index int, args AppendEntriesArgs, prevTerm int) {
 
+			// 对每个结点起一个 goroutine ：发送rpc 、处理rpc
+			go func(index int, args AppendEntriesArgs, prevTerm int) {
+				defer func() {
+					sum_mu.Lock()
+					sum++
+					if sum == rf.nPeers {
+						doneCh <- struct{}{}
+					}
+					sum_mu.Unlock()
+				}()
 				reply := AppendEntriesReply{}
-				ok := rf.sendAppendEntries(index, &args, &reply)
-				for ok {
+				ok := false
+				for !ok {
 					rf.mu.Lock()
-					// rpc成功，判断此rf的term是否在rpc期间发生变化
-					if rf.currentTerm != prevTerm {
+					// rpc成功，判断是否还是最初的任期
+					if rf.currentTerm != prevTerm || rf.status != STATE_LEADER {
+						rf.mu.Unlock()
+						return
+					}
+					rf.mu.Unlock()
+					ok = rf.sendAppendEntries(index, &args, &reply)
+				}
+				for {
+					rf.mu.Lock()
+
+					// rpc成功，判断是否还是最初的任期
+					if rf.currentTerm != prevTerm || rf.status != STATE_LEADER {
 						rf.mu.Unlock()
 						return
 					}
 
 					// 收到回复的Term大于当前rf的Term
 					if reply.Term > rf.currentTerm {
+						PrettyDebug(dLeader, "S%d T%d turn to follower: T%d -> T%d", rf.me, rf.currentTerm,
+							rf.currentTerm, reply.Term)
 						rf.status = STATE_FOLLOWER
 						rf.voteFor = Null
 						rf.currentTerm = reply.Term
@@ -686,35 +764,76 @@ func (rf *Raft) LeaderAppendEntries() {
 					}
 
 					if reply.Success {
-						atomic.AddInt32(&count, 1)
-						if atomic.LoadInt32(&count) == int32(rf.nPeers/2+1) {
-							rf.commitIndex = rf.matchIndex[rf.me]
-						}
-						PrettyDebug(dLeader, "S%d %s Term %d appendEntries success: commitIndex%d", rf.me,
-							statusMap[rf.status], rf.currentTerm, rf.commitIndex)
+						PrettyDebug(dLeader, "S%d %s T%d appendEntries success: log_len%d", rf.me,
+							statusMap[rf.status], rf.currentTerm, len(rf.log))
+						rf.nextIndex[index] = len(rf.log)
+						rf.matchIndex[index] = len(rf.log) - 1
 						rf.mu.Unlock()
 						return
 					} else {
-						if args.PrevLogIndex > 1 {
+						if args.PrevLogIndex >= 1 {
 							args.PrevLogIndex--
 							args.PrevLogTerm = rf.log[args.PrevLogIndex].Term
 							args.Entries = rf.log[args.PrevLogIndex+1:]
 						}
 						rf.mu.Unlock()
-						ok = rf.sendAppendEntries(index, &args, &reply)
+						ok = false
+						for !ok {
+							rf.mu.Lock()
+							// rpc成功，判断是否还是最初的任期
+							if rf.currentTerm != prevTerm || rf.status != STATE_LEADER {
+								rf.mu.Unlock()
+								return
+							}
+							rf.mu.Unlock()
+							ok = rf.sendAppendEntries(index, &args, &reply)
+						}
 					}
 				}
 			}(index, args, prevTerm)
 		}
-		for atomic.LoadInt32(&count) < int32(rf.nPeers) {
-			continue
+
+		select {
+		case <-doneCh:
+			break
 		}
+
+	}()
+}
+
+func (rf *Raft) updateCommitIndex() {
+	for !rf.killed() {
+		time.Sleep(UpdateCommitIndexInterval * time.Millisecond)
+		rf.mu.Lock()
+		if rf.status != STATE_LEADER {
+			rf.mu.Unlock()
+			return
+		}
+		//PrettyDebug(dCommit, "S%d update check commit", rf.me)
+		for N := rf.commitIndex + 1; N < rf.nextIndex[rf.me]; N++ {
+			if N > rf.commitIndex && rf.log[N].Term == rf.currentTerm {
+				count := 1
+				for id, _ := range rf.peers {
+					if id == rf.me {
+						continue
+					}
+					//PrettyDebug(dCommit, "S%d update commit count%d matchIndex[%d]%d", rf.me, count, id, rf.matchIndex[id])
+					if rf.matchIndex[id] >= N {
+						count++
+					}
+				}
+				if count >= rf.nPeers/2+1 {
+					rf.commitIndex = N
+					PrettyDebug(dCommit, "S%d commit %d", rf.me, rf.commitIndex)
+				}
+			}
+		}
+		rf.mu.Unlock()
 	}
 }
 
-func (rf *Raft) ApplyCheck(applyCh chan ApplyMsg) {
-	for rf.killed() == false {
-		time.Sleep(10 * time.Millisecond)
+func (rf *Raft) applyCheck(applyCh chan ApplyMsg) {
+	go func() {
 		rf.mu.Lock()
 		var appliedMsgs = make([]ApplyMsg, 0)
 		for rf.commitIndex > rf.lastApplied {
@@ -724,16 +843,15 @@ func (rf *Raft) ApplyCheck(applyCh chan ApplyMsg) {
 				Command:      rf.log[rf.lastApplied].Command,
 				CommandIndex: rf.lastApplied,
 			}
-			PrettyDebug(dCommit, "S%d %s Term%d commit{CommandIndex:%d}", rf.me, statusMap[rf.status],
+			PrettyDebug(dCommit, "S%d %s T%d commit{CommandIndex:%d}", rf.me, statusMap[rf.status],
 				rf.currentTerm, rf.lastApplied)
 			appliedMsgs = append(appliedMsgs, msg)
 		}
 		rf.mu.Unlock()
 		for _, msg := range appliedMsgs {
-			PrettyDebug(dCommit, "S%d %s Term%d commit", rf.me, statusMap[rf.status], rf.currentTerm)
 			applyCh <- msg
 		}
-	}
+	}()
 }
 
 // the service or tester wants to create a Raft server. the ports
@@ -767,7 +885,11 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.log = append(rf.log, LogEntry{Term: 0})
 	rf.nPeers = len(peers)
 	rf.electionTimer = time.NewTimer(randomElectionTimeout())
+	rf.heartBeatTimer = time.NewTimer(HeartBeatInterval * time.Millisecond)
 
+	rf.appendEntriesTimer = time.NewTimer(AppendEntriesInterval * time.Millisecond)
+	rf.applyTimer = time.NewTimer(ApplyInterval * time.Millisecond)
+	rf.updateCommitTimer = time.NewTimer(UpdateCommitIndexInterval * time.Millisecond)
 	rf.lastApplied = 0
 
 	// initialize from state persisted before a crash
@@ -779,10 +901,10 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	go rf.ticker()
 
 	// start LeaderAppendEntries to let leader append Entries
-	go rf.LeaderAppendEntries()
+	go rf.appendEntriesTicker()
 
-	// start apply goroutine to send applyMsg to applyCh
-	go rf.ApplyCheck(applyCh)
+	// start apply ticker goroutine to send applyMsg to applyCh
+	go rf.applyTicker(applyCh)
 
 	return rf
 }
