@@ -103,7 +103,7 @@ const (
 	STATE_CANDIDATE           = 2
 	STATE_LEADER              = 3
 	HeartBeatInterval         = 100
-	AppendEntriesInterval     = 10
+	AppendEntriesInterval     = 50
 	ApplyInterval             = 10
 	UpdateCommitIndexInterval = 5
 )
