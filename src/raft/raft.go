@@ -103,7 +103,7 @@ const (
 	STATE_CANDIDATE           = 2
 	STATE_LEADER              = 3
 	HeartBeatInterval         = 100
-	AppendEntriesInterval     = 50
+	AppendEntriesInterval     = 60
 	ApplyInterval             = 10
 	UpdateCommitIndexInterval = 5
 )
@@ -177,7 +177,6 @@ func (rf *Raft) GetState() (int, bool) {
 	// Your code here (2A).
 	term = rf.currentTerm
 	isleader = rf.status == STATE_LEADER
-	// fmt.Printf("%d 是 %d\n", rf.me, rf.status)
 	return term, isleader
 }
 
@@ -283,7 +282,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 			args.PrevLogIndex, args.PrevLogTerm, len(args.Entries), args.LeaderCommit)
 	}
 	rf.electionTimer.Reset(randomElectionTimeout())
-	// log.Printf("%d Get HeartBeat!", rf.me)
 	// 如果 args's term < currentTerm, return false
 	if args.Term < rf.currentTerm {
 		reply.Term = rf.currentTerm
@@ -412,8 +410,6 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 		"args.LastLogIndex%d, last_index%d)", rf.me, rf.currentTerm, args.CandidateId, args.Term, args.LastLogTerm, last_log.Term, args.LastLogIndex, last_index)
 	if (rf.voteFor == Null || rf.voteFor == args.CandidateId) &&
 		(args.LastLogTerm > last_log.Term || (args.LastLogTerm == last_log.Term && args.LastLogIndex >= last_index)) {
-		//PrettyDebug(dTimer, "S%d T%d reset election timeout. (RequestVote: %d vote for %d)", rf.me, rf.currentTerm,
-		//	rf.me, args.CandidateId)
 		rf.electionTimer.Reset(randomElectionTimeout())
 		rf.voteFor = args.CandidateId
 		reply.VoteGranted = true
@@ -681,27 +677,28 @@ func (rf *Raft) LeaderAppendEntries() {
 					defer wg.Done()
 					args := AppendEntriesArgs{}
 					reply := AppendEntriesReply{}
-					ok := false
-					for !ok {
-						rf.mu.Lock()
-						// 判断是否还是Leader
-						if rf.status != STATE_LEADER {
-							rf.mu.Unlock()
-							return
-						}
-						// 生成发送的args
-						LastIndex, LastLog := rf.getLastLog()
-						args = AppendEntriesArgs{
-							Term:         rf.currentTerm,
-							LeaderId:     rf.me,
-							PrevLogIndex: LastIndex,
-							PrevLogTerm:  LastLog.Term,
-							Entries:      make([]LogEntry, 0),
-							LeaderCommit: rf.commitIndex,
-						}
-						args.Entries = append(args.Entries, rf.log[args.PrevLogIndex+1:]...)
+					//ok := false
+					rf.mu.Lock()
+					// 判断是否还是Leader
+					if rf.status != STATE_LEADER {
 						rf.mu.Unlock()
-						ok = rf.sendAppendEntries(index, &args, &reply)
+						return
+					}
+					// 生成发送的args
+					LastIndex, LastLog := rf.getLastLog()
+					args = AppendEntriesArgs{
+						Term:         rf.currentTerm,
+						LeaderId:     rf.me,
+						PrevLogIndex: LastIndex,
+						PrevLogTerm:  LastLog.Term,
+						Entries:      make([]LogEntry, 0),
+						LeaderCommit: rf.commitIndex,
+					}
+					args.Entries = append(args.Entries, rf.log[args.PrevLogIndex+1:]...)
+					rf.mu.Unlock()
+					ok := rf.sendAppendEntries(index, &args, &reply)
+					if !ok {
+						return
 					}
 					for {
 						rf.mu.Lock()
@@ -737,17 +734,17 @@ func (rf *Raft) LeaderAppendEntries() {
 								args.Entries = rf.log[args.PrevLogIndex+1:]
 							}
 							rf.mu.Unlock()
-							ok = false
-							for !ok {
-								rf.mu.Lock()
-								// rpc成功，判断是否还是最初的任期
-								if rf.currentTerm != args.Term {
-									rf.mu.Unlock()
-									return
-								}
-								rf.mu.Unlock()
-								ok = rf.sendAppendEntries(index, &args, &reply)
+							ok = rf.sendAppendEntries(index, &args, &reply)
+							if !ok {
+								return
 							}
+							rf.mu.Lock()
+							// rpc成功，判断是否还是最初的任期
+							if rf.currentTerm != args.Term {
+								rf.mu.Unlock()
+								return
+							}
+							rf.mu.Unlock()
 						}
 					}
 				}(index)
@@ -765,16 +762,13 @@ func (rf *Raft) updateCommitIndex() {
 			rf.mu.Unlock()
 			return
 		}
-		//PrettyDebug(dCommit, "S%d update check commit", rf.me)
 		for N := rf.nextIndex[rf.me] - 1; N > rf.commitIndex; N-- {
-			// for N := rf.commitIndex + 1; N < rf.nextIndex[rf.me]; N++ {
 			if N > rf.commitIndex && rf.log[N].Term == rf.currentTerm {
 				count := 1
 				for id, _ := range rf.peers {
 					if id == rf.me {
 						continue
 					}
-					//PrettyDebug(dCommit, "S%d update commit count%d matchIndex[%d]%d", rf.me, count, id, rf.matchIndex[id])
 					if rf.matchIndex[id] >= N {
 						PrettyDebug(dCommit, "S%d matchIndex > %d, count++", rf.commitIndex, N)
 						count++

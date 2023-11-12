@@ -528,7 +528,6 @@ func TestRejoin2B(t *testing.T) {
 
 	// new leader commits, also for index=2
 	cfg.one(103, 2, true)
-	fmt.Println("103 success")
 	// new leader network failure
 	leader2 := cfg.checkOneLeader()
 	cfg.disconnect(leader2)
@@ -539,7 +538,6 @@ func TestRejoin2B(t *testing.T) {
 	PrettyDebug(dLeader, "S%d connect", leader1)
 
 	cfg.one(104, 2, true)
-	fmt.Println("104 success")
 	// all together now
 	cfg.connect(leader2)
 	PrettyDebug(dLeader, "S%d connect", leader2)
