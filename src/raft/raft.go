@@ -18,6 +18,8 @@ package raft
 //
 
 import (
+	"6.824/labgob"
+	"bytes"
 	"fmt"
 	"log"
 	"math/rand"
@@ -192,6 +194,13 @@ func (rf *Raft) persist() {
 	// e.Encode(rf.yyy)
 	// data := w.Bytes()
 	// rf.persister.SaveRaftState(data)
+	w := new(bytes.Buffer)
+	e := labgob.NewEncoder(w)
+	e.Encode(rf.currentTerm)
+	e.Encode(rf.voteFor)
+	e.Encode(rf.log)
+	data := w.Bytes()
+	rf.persister.SaveRaftState(data)
 }
 
 // restore previously persisted state.
@@ -212,6 +221,23 @@ func (rf *Raft) readPersist(data []byte) {
 	//   rf.xxx = xxx
 	//   rf.yyy = yyy
 	// }
+	r := bytes.NewBuffer(data)
+	d := labgob.NewDecoder(r)
+	var term int
+	var voteFor int
+	var log []LogEntry
+	if d.Decode(&term) != nil || d.Decode(&voteFor) != nil || d.Decode(&log) != nil {
+		fmt.Printf("Error: raft%d readPersist.", rf.me)
+	} else {
+		rf.mu.Lock()
+		rf.currentTerm = term
+		rf.voteFor = voteFor
+		rf.log = log
+		var logLength = len(rf.log)
+		fmt.Printf("%v raft%d readPersist, term:%d, voteFor:%d, logLength:%d\n", time.Now(), rf.me, rf.currentTerm, rf.voteFor, logLength)
+		rf.nextIndex[rf.me] = logLength
+		rf.mu.Unlock()
+	}
 }
 
 // A service wants to switch to snapshot.  Only do so if Raft hasn't
@@ -294,6 +320,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		rf.currentTerm = args.Term
 		rf.voteFor = Null
 		rf.status = STATE_FOLLOWER
+		rf.persist()
 	}
 
 	// 获取最后一条日志的index 和 log 数据
@@ -314,6 +341,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		PrettyDebug(dLog2, "S%d LAST LOG NOT MATCH. (this.sameIndex_term %d != leader.Prev_term %d)", rf.me,
 			rf.log[args.PrevLogIndex].Term, args.PrevLogTerm)
 		rf.log = rf.log[:args.PrevLogIndex]
+		rf.persist()
 		rf.nextIndex[rf.me] = len(rf.log)
 		rf.matchIndex[rf.me] = rf.nextIndex[rf.me] - 1
 		reply.Term = rf.currentTerm
@@ -335,6 +363,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 			}
 		}
 	}
+	rf.persist()
 	rf.nextIndex[rf.me] = len(rf.log)
 	rf.matchIndex[rf.me] = rf.nextIndex[rf.me] - 1
 	PrettyDebug(dLog2, "S%d after append nextIndex%d matchIndex%d", rf.me, rf.nextIndex[rf.me], rf.matchIndex[rf.me])
@@ -382,6 +411,7 @@ func (rf *Raft) startHeartBeat() {
 					PrettyDebug(dLeader, "S%d turn to follower : find bigger term", rf.me)
 					rf.status = STATE_FOLLOWER
 					rf.voteFor = Null
+					rf.persist()
 				}
 				rf.mu.Unlock()
 			}(index)
@@ -403,6 +433,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 		rf.currentTerm = args.Term
 		rf.status = STATE_FOLLOWER
 		rf.voteFor = Null
+		rf.persist()
 	}
 	last_index := rf.nextIndex[rf.me] - 1
 	last_log := rf.log[last_index]
@@ -416,6 +447,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 		reply.Term = rf.currentTerm
 		PrettyDebug(dVote, "S%d T%d Vote For S%d T%d", rf.me, rf.currentTerm, args.CandidateId,
 			args.Term)
+		rf.persist()
 		return
 	}
 	reply.VoteGranted = false
@@ -487,6 +519,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	}
 
 	rf.log = append(rf.log, new_log)
+	rf.persist()
 	rf.nextIndex[rf.me]++
 	rf.matchIndex[rf.me]++
 
@@ -527,6 +560,7 @@ func (rf *Raft) startElection() {
 	rf.currentTerm++
 	rf.status = STATE_CANDIDATE
 	rf.voteFor = rf.me
+	rf.persist()
 	args := RequestVoteArgs{
 		Term:         rf.currentTerm,
 		CandidateId:  rf.me,
@@ -552,6 +586,7 @@ func (rf *Raft) startElection() {
 				rf.currentTerm = reply.Term
 				rf.status = STATE_FOLLOWER
 				rf.voteFor = Null
+				rf.persist()
 				rf.mu.Unlock()
 				return
 			}
@@ -715,6 +750,7 @@ func (rf *Raft) LeaderAppendEntries() {
 							rf.status = STATE_FOLLOWER
 							rf.voteFor = Null
 							rf.currentTerm = reply.Term
+							rf.persist()
 							rf.mu.Unlock()
 							return
 						}
