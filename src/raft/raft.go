@@ -290,15 +290,6 @@ type AppendEntriesReply struct {
 	Success bool // true if follower contained entry matching prevLogIndex and prevLogTerm
 }
 
-// you should hold lock when calling this func
-func (rf *Raft) getLastLog() (int, LogEntry) {
-	LastIndex := 0
-	if rf.matchIndex[rf.me] >= 1 {
-		LastIndex = rf.matchIndex[rf.me] - 1
-	}
-	return LastIndex, rf.log[LastIndex]
-}
-
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
@@ -343,7 +334,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		rf.log = rf.log[:args.PrevLogIndex]
 		rf.persist()
 		rf.nextIndex[rf.me] = len(rf.log)
-		rf.matchIndex[rf.me] = rf.nextIndex[rf.me] - 1
 		reply.Term = rf.currentTerm
 		reply.Success = false
 		return
@@ -365,8 +355,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	}
 	rf.persist()
 	rf.nextIndex[rf.me] = len(rf.log)
-	rf.matchIndex[rf.me] = rf.nextIndex[rf.me] - 1
-	PrettyDebug(dLog2, "S%d after append nextIndex%d matchIndex%d", rf.me, rf.nextIndex[rf.me], rf.matchIndex[rf.me])
+	PrettyDebug(dLog2, "S%d after append nextIndex%d", rf.me, rf.nextIndex[rf.me])
 
 	if args.LeaderCommit > rf.commitIndex {
 		rf.commitIndex = min(args.LeaderCommit, len(rf.log)-1)
@@ -521,10 +510,9 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	rf.log = append(rf.log, new_log)
 	rf.persist()
 	rf.nextIndex[rf.me]++
-	rf.matchIndex[rf.me]++
 
-	PrettyDebug(dClient, "S%d %s Term %d append new log nextIndex%d matchIndex%d", rf.me, statusMap[rf.status],
-		rf.currentTerm, rf.nextIndex[rf.me], rf.matchIndex[rf.me])
+	PrettyDebug(dClient, "S%d %s Term %d append new log nextIndex%d", rf.me, statusMap[rf.status],
+		rf.currentTerm, rf.nextIndex[rf.me])
 
 	rf.mu.Unlock()
 
@@ -720,12 +708,11 @@ func (rf *Raft) LeaderAppendEntries() {
 						return
 					}
 					// 生成发送的args
-					LastIndex, LastLog := rf.getLastLog()
 					args = AppendEntriesArgs{
 						Term:         rf.currentTerm,
 						LeaderId:     rf.me,
-						PrevLogIndex: LastIndex,
-						PrevLogTerm:  LastLog.Term,
+						PrevLogIndex: rf.nextIndex[index] - 1,
+						PrevLogTerm:  rf.log[rf.nextIndex[index]-1].Term,
 						Entries:      make([]LogEntry, 0),
 						LeaderCommit: rf.commitIndex,
 					}
@@ -765,7 +752,8 @@ func (rf *Raft) LeaderAppendEntries() {
 						} else {
 							if args.PrevLogIndex >= 1 {
 								PrettyDebug(dLeader, "S%d PrevLogIndex%d--", rf.me, args.PrevLogIndex)
-								args.PrevLogIndex--
+								rf.nextIndex[index]--
+								args.PrevLogIndex = rf.nextIndex[index]
 								args.PrevLogTerm = rf.log[args.PrevLogIndex].Term
 								args.Entries = rf.log[args.PrevLogIndex+1:]
 							}
