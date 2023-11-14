@@ -293,11 +293,6 @@ type AppendEntriesReply struct {
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-	if len(args.Entries) != 0 {
-		PrettyDebug(dLog2, "S%d T%d received appendEntries rpc args:{Term%d, LeaderId%d, PrevLogIndex%d, "+
-			"PrevLogTerm%d, len(Entries)%d, LeaderCommit%d}", rf.me, rf.currentTerm, args.Term, args.LeaderId,
-			args.PrevLogIndex, args.PrevLogTerm, len(args.Entries), args.LeaderCommit)
-	}
 	rf.electionTimer.Reset(randomElectionTimeout())
 	// 如果 args's term < currentTerm, return false
 	if args.Term < rf.currentTerm {
@@ -306,8 +301,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		return
 	}
 	if args.Term > rf.currentTerm {
-		PrettyDebug(dTerm, "S%d T%d converting to follower. Term too small1 (%d -> %d)", rf.me, rf.currentTerm,
-			rf.currentTerm, args.Term)
 		rf.currentTerm = args.Term
 		rf.voteFor = Null
 		rf.status = STATE_FOLLOWER
@@ -319,8 +312,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 
 	// 如果此raft的最后一条日志的 index 小于 args 的 PrevLogIndex
 	if last_index < args.PrevLogIndex {
-		PrettyDebug(dLog2, "S%d LAST LOG NOT MATCH. (this.last_index %d < leader.Prev_index %d)", rf.me,
-			last_index, args.PrevLogIndex)
 		reply.Term = rf.currentTerm
 		reply.Success = false
 		return
@@ -329,8 +320,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	// args.PrevLogIndex 现在可能 等于 last_index 或者小于 last_index
 	// an existing entry term 与 leader 最后一条日志的 term 不一致，直接删除
 	if rf.log[args.PrevLogIndex].Term != args.PrevLogTerm {
-		PrettyDebug(dLog2, "S%d LAST LOG NOT MATCH. (this.sameIndex_term %d != leader.Prev_term %d)", rf.me,
-			rf.log[args.PrevLogIndex].Term, args.PrevLogTerm)
 		rf.log = rf.log[:args.PrevLogIndex]
 		rf.persist()
 		rf.nextIndex[rf.me] = len(rf.log)
@@ -338,8 +327,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		reply.Success = false
 		return
 	}
-
-	PrettyDebug(dLog2, "S%d %s T%d append new log, len(rf.log) %d, args.PrevLogIndex %d", rf.me, statusMap[rf.status], rf.currentTerm, len(rf.log), args.PrevLogIndex)
 
 	if args.PrevLogIndex+1 == len(rf.log) {
 		rf.log = append(rf.log[:args.PrevLogIndex+1], args.Entries...)
@@ -355,15 +342,16 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	}
 	rf.persist()
 	rf.nextIndex[rf.me] = len(rf.log)
-	PrettyDebug(dLog2, "S%d after append nextIndex%d", rf.me, rf.nextIndex[rf.me])
-
+	if len(args.Entries) != 0 {
+		PrettyDebug(dLog2, "S%d T%d appendLog[(%d, %d) -> (%d, %d)]", rf.me, rf.currentTerm, args.PrevLogIndex+1, rf.log[args.PrevLogIndex+1].Term, rf.nextIndex[rf.me]-1, rf.log[rf.nextIndex[rf.me]-1].Term)
+		PrettyDebug(dLog2, "S%d T%d logLength:%d", rf.me, rf.currentTerm, len(rf.log))
+	}
 	if args.LeaderCommit > rf.commitIndex {
 		rf.commitIndex = min(args.LeaderCommit, len(rf.log)-1)
 	}
 
 	reply.Term = rf.currentTerm
 	reply.Success = true
-	PrettyDebug(dLog2, "S%d %s Term%d append new log, len %d", rf.me, statusMap[rf.status], rf.currentTerm, len(rf.log))
 }
 
 func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
@@ -426,16 +414,12 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	}
 	last_index := rf.nextIndex[rf.me] - 1
 	last_log := rf.log[last_index]
-	PrettyDebug(dVote, "S%d T%d received RequestVote from S%d T%d (args.LastLogTerm%d, last_log.Term%d, "+
-		"args.LastLogIndex%d, last_index%d)", rf.me, rf.currentTerm, args.CandidateId, args.Term, args.LastLogTerm, last_log.Term, args.LastLogIndex, last_index)
 	if (rf.voteFor == Null || rf.voteFor == args.CandidateId) &&
 		(args.LastLogTerm > last_log.Term || (args.LastLogTerm == last_log.Term && args.LastLogIndex >= last_index)) {
 		rf.electionTimer.Reset(randomElectionTimeout())
 		rf.voteFor = args.CandidateId
 		reply.VoteGranted = true
 		reply.Term = rf.currentTerm
-		PrettyDebug(dVote, "S%d T%d Vote For S%d T%d", rf.me, rf.currentTerm, args.CandidateId,
-			args.Term)
 		rf.persist()
 		return
 	}
@@ -511,8 +495,8 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	rf.persist()
 	rf.nextIndex[rf.me]++
 
-	PrettyDebug(dClient, "S%d %s Term %d append new log nextIndex%d", rf.me, statusMap[rf.status],
-		rf.currentTerm, rf.nextIndex[rf.me])
+	PrettyDebug(dClient, "S%d T%d append newLog(%d, %d)", rf.me, rf.currentTerm,
+		rf.nextIndex[rf.me]-1, rf.log[rf.nextIndex[rf.me]-1].Term)
 
 	rf.mu.Unlock()
 
@@ -544,7 +528,6 @@ func randomElectionTimeout() time.Duration {
 
 func (rf *Raft) startElection() {
 	rf.mu.Lock()
-	PrettyDebug(dTimer, "S%d T%d start election", rf.me, rf.currentTerm)
 	rf.currentTerm++
 	rf.status = STATE_CANDIDATE
 	rf.voteFor = rf.me
@@ -570,7 +553,7 @@ func (rf *Raft) startElection() {
 			}
 			rf.mu.Lock()
 			if reply.Term > rf.currentTerm {
-				PrettyDebug(dTerm, "S%d T%d converting to T%d follower", rf.me, rf.currentTerm, reply.Term)
+				PrettyDebug(dTerm, "S%d T%d converting to follower", rf.me, rf.currentTerm)
 				rf.currentTerm = reply.Term
 				rf.status = STATE_FOLLOWER
 				rf.voteFor = Null
@@ -603,6 +586,11 @@ func (rf *Raft) startElection() {
 			rf.mu.Lock()
 			rf.status = STATE_LEADER
 			PrettyDebug(dLeader, "S%d T%d converting to Leader! ", rf.me, rf.currentTerm)
+			lastLogIndex := len(rf.log) - 1
+			for index, _ := range rf.peers {
+				rf.nextIndex[index] = lastLogIndex + 1
+				rf.matchIndex[index] = 0
+			}
 			rf.heartBeatTimer.Reset(0)
 			go rf.updateCommitIndex()
 			go rf.LeaderAppendEntries()
@@ -624,6 +612,7 @@ func (rf *Raft) ticker() {
 		case <-rf.electionTimer.C:
 			rf.mu.Lock()
 			if rf.status == STATE_LEADER {
+				rf.electionTimer.Reset(randomElectionTimeout())
 				rf.mu.Unlock()
 				break
 			}
@@ -732,8 +721,6 @@ func (rf *Raft) LeaderAppendEntries() {
 
 						// 收到回复的Term大于当前rf的Term
 						if reply.Term > rf.currentTerm {
-							PrettyDebug(dLeader, "S%d T%d turn to follower: T%d -> T%d", rf.me, rf.currentTerm,
-								rf.currentTerm, reply.Term)
 							rf.status = STATE_FOLLOWER
 							rf.voteFor = Null
 							rf.currentTerm = reply.Term
@@ -743,19 +730,19 @@ func (rf *Raft) LeaderAppendEntries() {
 						}
 
 						if reply.Success {
-							PrettyDebug(dWarn, "S%d %s T%d appendEntries success: log_len%d,", index,
-								statusMap[index], rf.currentTerm, len(rf.log))
 							rf.nextIndex[index] = args.PrevLogIndex + len(args.Entries) + 1
 							rf.matchIndex[index] = args.PrevLogIndex + len(args.Entries)
 							rf.mu.Unlock()
 							return
 						} else {
 							if args.PrevLogIndex >= 1 {
-								PrettyDebug(dLeader, "S%d PrevLogIndex%d--", rf.me, args.PrevLogIndex)
 								rf.nextIndex[index]--
 								args.PrevLogIndex = rf.nextIndex[index]
 								args.PrevLogTerm = rf.log[args.PrevLogIndex].Term
 								args.Entries = rf.log[args.PrevLogIndex+1:]
+							} else {
+								rf.mu.Unlock()
+								return
 							}
 							rf.mu.Unlock()
 							ok = rf.sendAppendEntries(index, &args, &reply)
@@ -794,13 +781,13 @@ func (rf *Raft) updateCommitIndex() {
 						continue
 					}
 					if rf.matchIndex[id] >= N {
-						PrettyDebug(dCommit, "S%d matchIndex > %d, count++", rf.commitIndex, N)
 						count++
 					}
 				}
 				if count >= rf.nPeers/2+1 {
 					rf.commitIndex = N
-					PrettyDebug(dCommit, "S%d commit %d", rf.me, rf.commitIndex)
+					PrettyDebug(dCommit, "S%d T%d commitLog(%d, %d)", rf.me, rf.currentTerm, rf.commitIndex,
+						rf.log[rf.commitIndex].Term)
 					break
 				}
 			}
@@ -820,8 +807,8 @@ func (rf *Raft) applyCheck(applyCh chan ApplyMsg) {
 				Command:      rf.log[rf.lastApplied].Command,
 				CommandIndex: rf.lastApplied,
 			}
-			PrettyDebug(dCommit, "S%d %s T%d commit{CommandIndex:%d}", rf.me, statusMap[rf.status],
-				rf.currentTerm, rf.lastApplied)
+			PrettyDebug(dCommit, "S%d %s T%d applyLog(%d, %d)", rf.me, statusMap[rf.status],
+				rf.currentTerm, rf.lastApplied, rf.log[rf.lastApplied].Term)
 			appliedMsgs = append(appliedMsgs, msg)
 			applyCh <- msg
 		}
