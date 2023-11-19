@@ -5,7 +5,7 @@ $ VERBOSE=1 go test -run InitialElection | dslogs
 # We can ignore verbose topics like timers or log changes
 $ VERBOSE=1 go test -run Backup | dslogs -c 5 -i TIMR,DROP,LOG2
 
-VERBOSE=1 go test -run TestReElection2A | dslogs -c 5 -i DROP,LOG2
+VERBOSE=1 go test -run TestSnapshotInstall2D | dslogs -c 5 -i DROP,LOG2
 # ... colored output in 5 columns
 
 # Dumping output to a file can be handy to iteratively
