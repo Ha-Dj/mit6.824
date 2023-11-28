@@ -105,8 +105,8 @@ const (
 	STATE_CANDIDATE           = 2
 	STATE_LEADER              = 3
 	HeartBeatInterval         = 100
-	AppendEntriesInterval     = 60
-	ApplyInterval             = 20
+	AppendEntriesInterval     = 10
+	ApplyInterval             = 10
 	UpdateCommitIndexInterval = 5
 )
 
@@ -408,7 +408,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	last_index := rf.nextIndex[rf.me] - 1
 
 	// 如果此raft的最后一条日志的 index 小于 args 的 PrevLogIndex
-	if last_index < args.PrevLogIndex {
+	if last_index < args.PrevLogIndex || args.PrevLogIndex < rf.lastIncludeIndex {
 		reply.Term = rf.currentTerm
 		reply.Success = false
 		reply.ConflictTerm = Null
@@ -448,7 +448,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 			}
 		}
 	}
-	rf.persist()
 	// !!!! 不能简单的删除处理，考虑到不稳定的网络，所以需要判断后面跟着的日志条目是否不是当前Term的，如果不是再删除
 	newLength := args.PrevLogIndex + len(args.Entries) + 1 - rf.lastIncludeIndex
 	for ; newLength < len(rf.log); newLength++ {
@@ -457,6 +456,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		}
 	}
 	rf.log = rf.log[:newLength]
+	rf.persist()
 	// rf.log = rf.log[:args.PrevLogIndex+len(args.Entries)+1]
 	rf.nextIndex[rf.me] = len(rf.log) + rf.lastIncludeIndex
 	//len2 := len(rf.log)
@@ -767,7 +767,6 @@ func (rf *Raft) applyTicker(applyCh chan ApplyMsg) {
 		case <-rf.applyTimer.C:
 			rf.mu.Lock()
 			rf.applyCheck(applyCh)
-			rf.applyTimer.Reset(ApplyInterval * time.Millisecond)
 			rf.mu.Unlock()
 			break
 		}
@@ -818,7 +817,6 @@ func (rf *Raft) LeaderAppendEntries() {
 				go func(index int) {
 					defer wg.Done()
 					args := AppendEntriesArgs{}
-					reply := AppendEntriesReply{}
 					//ok := false
 					rf.mu.Lock()
 					// 判断是否还是Leader
@@ -856,8 +854,12 @@ func (rf *Raft) LeaderAppendEntries() {
 						Entries:      make([]LogEntry, 0),
 						LeaderCommit: rf.commitIndex,
 					}
-					args.Entries = append(args.Entries, rf.log[args.PrevLogIndex+1-rf.lastIncludeIndex:]...)
+					var tempLog = rf.log[args.PrevLogIndex+1-rf.lastIncludeIndex:]
+					args.Entries = make([]LogEntry, len(tempLog))
+					copy(args.Entries, tempLog)
+					//args.Entries = append(args.Entries, rf.log[args.PrevLogIndex+1-rf.lastIncludeIndex:]...)
 					rf.mu.Unlock()
+					reply := AppendEntriesReply{}
 					ok := rf.sendAppendEntries(index, &args, &reply)
 					if !ok {
 						return
@@ -911,12 +913,16 @@ func (rf *Raft) LeaderAppendEntries() {
 									return
 								}
 								args.PrevLogTerm = rf.log[args.PrevLogIndex-rf.lastIncludeIndex].Term
-								args.Entries = rf.log[args.PrevLogIndex+1-rf.lastIncludeIndex:]
+								// args.Entries = rf.log[args.PrevLogIndex+1-rf.lastIncludeIndex:]
+								tempLog = rf.log[args.PrevLogIndex+1-rf.lastIncludeIndex:]
+								args.Entries = make([]LogEntry, len(tempLog))
+								copy(args.Entries, tempLog)
 							} else {
 								rf.mu.Unlock()
 								return
 							}
 							rf.mu.Unlock()
+							reply = AppendEntriesReply{}
 							ok = rf.sendAppendEntries(index, &args, &reply)
 							if !ok {
 								return
@@ -987,6 +993,7 @@ func (rf *Raft) applyCheck(applyCh chan ApplyMsg) {
 		for _, msg := range appliedMsgs {
 			applyCh <- msg
 		}
+		rf.applyTimer.Reset(ApplyInterval * time.Millisecond)
 	}()
 }
 
